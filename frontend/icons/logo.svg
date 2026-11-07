@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AquaFind">
+<defs><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="10" y1="54" x2="50" y2="8"><stop offset="0" stop-color="#38BDF8"/><stop offset="1" stop-color="#2196F3"/></linearGradient>
+<linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2196F3"/><stop offset="1" stop-color="#102A43"/></linearGradient></defs>
+<path d="M18.900 37c4.300-5.500 8.600-5.500 13.100 0s8.800 5.500 13.100 0L53 54H11z" fill="url(#w)"/>
+<path d="M11 54 32 9l21 45" fill="none" stroke="url(#a)" stroke-width="7.500" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M17.500 47c4.500-4.500 9-4.500 14.500 0s10 4.500 14.500 0" fill="none" stroke="#38BDF8" stroke-width="3.200" stroke-linecap="round"/>
+</svg>

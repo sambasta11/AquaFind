@@ -1,0 +1,24 @@
+const ROOT = require('path').resolve(__dirname, '..');
+const { JSDOM, VirtualConsole } = require('jsdom'); const { spawn } = require('child_process'); const fs = require('fs');
+const PORT = 3781, URL0 = `http://localhost:${PORT}/`; fs.rmSync('/tmp/ui-db5', { recursive: true, force: true });
+const srv = spawn('node', ['--no-warnings', ROOT + '/backend/server.js'], { env: { ...process.env, PORT, DB_SCHEMA: 'test_ui5', DB_SCHEMA_RESET: '1', NODE_ENV: '' }, stdio: 'ignore' });
+const sleep = ms => new Promise(r => setTimeout(r, ms)); let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  FAIL', m); };
+const boot = async (token, hash = '') => { const errs = []; const vc = new VirtualConsole(); vc.on('jsdomError', e => errs.push(e.message));
+  const dom = await JSDOM.fromURL(URL0 + hash, { runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true, virtualConsole: vc, beforeParse(w) { w.matchMedia = () => ({ matches: false, addEventListener() { }, removeEventListener() { } }); w.scrollTo = () => { }; w.fetch = (u, o) => fetch(new URL(u, URL0), o); if (token) w.localStorage.setItem('aqf', token); } });
+  await sleep(1600); return { w: dom.window, d: dom.window.document, errs }; };
+(async () => {
+  await sleep(1200);
+  const tok = (await (await fetch(URL0 + 'api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'user@aquafind.com', password: 'user123' }) })).json()).token;
+  let t = await boot(); ok(!!t.d.querySelector('.auth-hero .wave') && !!t.d.querySelector('.auth-in form'), 'sign-in: gradient hero + form card'); ok(!!t.d.querySelector('#email,input[type=email]'), 'sign-in form still has its email field'); ok(t.errs.length === 0, 'no errors ' + t.errs.join('|'));
+  t = await boot(tok); const d = t.d;
+  ok(/Hello, Maria/.test(d.querySelector('.hello')?.textContent || ''), 'Home greets the user by first name');
+  ok(!!d.querySelector('.hero .wave') && !!d.querySelector('.hero #loc') && !!d.querySelector('.hero #hq'), 'hero holds wave, location selector and search');
+  ok(!!d.querySelector('.home-main > .home-map #homemap') && d.querySelectorAll('.home-main > section').length >= 4, 'map preview sits inside the dashboard flow');
+  ok(!!d.querySelector('.lead .lead-h a') && !!d.querySelector('.lead .st') && !!d.querySelector('.lead a.btn.primary[href*=directions]'), 'nearest-station card: name, status pill, Get directions');
+  ok(d.querySelectorAll('.srow').length > 0 && d.querySelectorAll('.st[data-sid]').length > 0, 'station cards and status pills render');
+  ok(d.querySelectorAll('#homemap .leaflet-marker-icon, #homemap .leaflet-pane').length > 0, 'Leaflet map initialised in the hero-adjacent preview');
+  t.w.location.hash = '#/stations'; await sleep(600); ok(d.querySelectorAll('.srow').length === 8, 'Stations page lists all 8 stations as cards');
+  t.w.location.hash = '#/station/s1'; await sleep(700); ok(!!d.querySelector('.status-hero') && !!d.querySelector('a[href*=directions]'), 'detail: status hero + directions action');
+  ok(t.errs.length === 0, 'no script errors ' + t.errs.join('|'));
+  console.log(`${pass} passed, ${fail} failed`); srv.kill(); process.exit(fail ? 1 : 0);
+})().catch(e => { console.error(e); srv.kill(); process.exit(1); });

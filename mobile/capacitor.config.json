@@ -1,0 +1,7 @@
+{
+  "appId": "com.aquafind.app",
+  "appName": "AquaFind",
+  "webDir": "../frontend",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

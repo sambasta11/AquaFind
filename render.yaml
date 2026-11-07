@@ -1,0 +1,21 @@
+# Render.com blueprint: one web service. The data lives in Supabase, so no persistent disk is needed (the free/starter plans both work).
+services:
+  - type: web
+    name: aquafind
+    runtime: node
+    plan: free               # free instances sleep after inactivity; use starter for always-on
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: NODE_VERSION, value: 22.13.0 }
+      - { key: TRUST_PROXY, value: "true" }
+      - { key: JWT_SECRET, generateValue: true }
+      - { key: DATABASE_URL, sync: false }      # Supabase connection string (Session pooler)
+      - { key: ADMIN_EMAIL, sync: false }
+      - { key: ADMIN_PASSWORD, sync: false }
+      - { key: SUPERADMIN_EMAIL, sync: false }
+      - { key: SUPERADMIN_PASSWORD, sync: false }
+      - { key: ANTHROPIC_API_KEY, sync: false }
