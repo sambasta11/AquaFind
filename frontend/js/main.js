@@ -20,11 +20,19 @@ function go(h) { if (location.hash === h || (h === '#/' && !location.hash)) { S.
 /* ---------- Shell ---------- */
 const NAV = [['home', 'Home', '#/', 'home'], ['map', 'Explore', '#/map', 'map'], ['stations', 'Stations', '#/stations', 'list'], ['reports', 'Community', '#/reports', 'users'], ['saved', 'Saved', '#/saved', 'heart']];
 const navKey = n => ({ detail: 'stations', directions: 'stations', report: 'stations' }[n] || n);
+/* Download button in the header: Android/desktop get the APK, iPhone gets the "Add to Home Screen" steps, installed app shows nothing */
+function dlBtn() {
+  const st = PWA.state();
+  if (window.Capacitor || st === 'installed') return '';
+  return st === 'ios'
+    ? `<button type="button" class="icon-btn dl-btn" data-act="ios-help" aria-label="Install AquaFind on iPhone" title="Install on iPhone">${ico('download', 19)}</button>`
+    : `<a class="icon-btn dl-btn" href="/downloads/AquaFind.apk" download="AquaFind.apk" aria-label="Download the Android app" title="Download the Android app">${ico('download', 19)}</a>`;
+}
 function mast(r) {
   const n = unread(), k = navKey(r.name), u = S.user;
   return `<a class="skip" href="#main" data-act="skip">Skip to content</a><header class="mast"><div class="mast-in"><a class="brand" href="#/">${logo(22)}<span>AquaFind</span></a><span class="mast-title" aria-hidden="true">${esc(TITLES[r.name] || '')}</span>
   <nav class="mnav" aria-label="Main">${NAV.map(t => `<a href="${t[2]}" class="${k === t[0] ? 'on' : ''}" ${k === t[0] ? 'aria-current="page"' : ''}>${t[1]}</a>`).join('')}</nav>
-  <div class="mast-r"><a class="icon-btn ${k === 'ask' ? 'on' : ''}" href="#/ask" aria-label="Ask AquaBot" title="Ask AquaBot">${ico('spark', 19)}</a>
+  <div class="mast-r">${dlBtn()}<a class="icon-btn ${k === 'ask' ? 'on' : ''}" href="#/ask" aria-label="Ask AquaBot" title="Ask AquaBot">${ico('spark', 19)}</a>
   <a class="icon-btn bell ${k === 'notifications' ? 'on' : ''}" href="#/notifications" aria-label="Notifications${n ? ', ' + n + ' unread' : ''}">${ico('bell', 19)}${n ? `<b class="badge num">${n > 9 ? '9+' : n}</b>` : ''}</a>
   <div class="acct"><button class="avatar" data-act="menu" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${avatar(u, 36)}</button>
     <div class="menu" id="acctmenu" role="menu" hidden><div class="menu-h">${avatar(u, 40)}<span class="menu-t"><b>${esc(u.name)}</b><span>${esc(u.email)}</span></span></div><a role="menuitem" href="#/account">${ico('user', 16)} Profile &amp; settings</a><a role="menuitem" href="#/notifications">${ico('bell', 16)} Notifications</a>${isStaff(u) ? `<a role="menuitem" href="#/admin">${ico('shield', 16)} ${u.role === 'superadmin' ? 'System console' : 'Admin console'}</a>` : ''}<button role="menuitem" data-act="logout">${ico('logout', 16)} Sign out</button></div></div></div></div></header>`;

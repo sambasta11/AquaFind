@@ -7,6 +7,7 @@ const M = 60000;
 
 /* ---------- Icons (1.6px stroke, 24px grid) ---------- */
 const IC = {
+  download: 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14',
   home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z',
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14',
   list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
