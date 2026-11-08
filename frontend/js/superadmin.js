@@ -6,7 +6,133 @@ const SA_SECTIONS = [['overview', 'Dashboard', 'chart'], ['stations', 'Stations'
 const SV = {};
 const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin' };
 
+/* ---------- Design: stylesheet for the moderation + people pages (injected once, scoped to .sx) ---------- */
+(function () {
+  if (document.getElementById('sx-style')) return;
+  const el = document.createElement('style'); el.id = 'sx-style';
+  el.textContent = `/* ===== System console: moderation + people design (scoped to .sx, safe to remove) ===== */
+.sx{--sx-green:#1FA06F;--sx-clay:#C4776A;--sx-gray:#97A3B2;--sx-navy:#0F2A4A;--sx-blue:#2196F3;--sx-teal:#2BB3AE;--sx-track:#E6F2FC;--sx-ease:cubic-bezier(.2,.7,.2,1)}
+.sx-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0 0 20px}
+.sx-kpi{position:relative;overflow:hidden;background:#fff;border-radius:16px;padding:16px 16px 14px 18px;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08))}
+.sx-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc)}
+.sx-kpi dt{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.06em}
+.sx-kpi dd{margin:6px 0 0;font:800 32px/1.1 var(--display);letter-spacing:-.03em;color:var(--sx-navy)}
+.sx-kpi.tint dd{color:var(--kc)}
+.sx-kpi small{display:block;margin-top:3px;font-size:12.5px;color:var(--slate)}
+.sx-dot{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sx-clay)}
+.sx-cols{display:grid;grid-template-columns:1fr;gap:16px;margin:0 0 18px}
+.sx-card{background:#fff;border-radius:18px;padding:20px;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08));min-width:0}
+.sx-card h2{margin:0 0 16px;font-size:16px;letter-spacing:-.01em;color:var(--sx-navy)}
+.sx-dn{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.sx-donut-w{position:relative;width:150px;height:150px;flex:none}
+.sx-donut{display:block;width:100%;height:100%}
+.sx-track{fill:none;stroke:var(--sx-track);stroke-width:11}
+.sx-seg{fill:none;stroke-width:11;stroke-linecap:butt}
+.sx-dc{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.1}
+.sx-dc b{font:800 28px/1 var(--display);letter-spacing:-.03em;color:var(--sx-navy)}
+.sx-dc small{margin-top:4px;font-size:11.5px;color:var(--slate)}
+.sx-lg{flex:1;min-width:150px;display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.sx-lg li{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;font-size:14px;font-weight:600;color:var(--sx-navy)}
+.sx-lg i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.sx-lg .num{font-weight:800}
+.sx-bars{display:grid;gap:14px}
+.sx-br{display:grid;grid-template-columns:54px 1fr 22px;gap:12px;align-items:center;font-size:13px;font-weight:600;color:var(--sx-navy)}
+.sx-br b{text-align:right}
+.sx-bar{display:block;height:8px;border-radius:6px;background:var(--sx-track);overflow:hidden}
+.sx-bar i{display:block;height:100%;border-radius:6px;background:var(--c);transform-origin:left center}
+.sx-nm{display:grid;gap:14px;margin:0;padding:0;list-style:none}
+.sx-nm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+.sx-nm .who{display:block;min-width:0}.sx-nm b{display:block;font-size:14px;color:var(--sx-navy)}
+.sx-nm .em{display:block;font-size:12.5px;color:var(--slate);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sx-nm .rt{display:grid;justify-items:end;gap:3px;font-size:11.5px;color:var(--slate)}
+.sx-search{position:relative;margin:0 0 12px}
+.sx-search .ic{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--slate);pointer-events:none}
+.sx-search input{width:100%;height:46px;padding:0 16px 0 44px;border:0;border-radius:14px;background:#fff;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08));font:inherit;color:var(--ink);outline:0;transition:box-shadow .2s}
+.sx-search input:focus{box-shadow:0 0 0 2px var(--aqua),var(--sh-3,0 4px 18px rgba(16,42,67,.08))}
+.sx-tabs{display:flex;gap:22px;margin:6px 0 12px;border-bottom:1px solid var(--rule);overflow-x:auto}
+.sx-tab{position:relative;background:none;border:0;padding:12px 0;font-size:14px;font-weight:600;color:var(--slate);white-space:nowrap;cursor:pointer;transition:color .2s}
+.sx-tab:hover{color:var(--sx-navy)}.sx-tab.on{color:var(--sx-navy)}
+.sx-tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--sx-teal);transform:scaleX(0);transition:transform .3s var(--sx-ease)}
+.sx-tab.on::after{transform:scaleX(1)}
+.sx-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.sx-chip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--rule-2);background:#fff;font-size:13.5px;font-weight:600;color:var(--sx-navy);cursor:pointer;transition:background-color .2s,color .2s,border-color .2s,transform .15s}
+.sx-chip:hover{border-color:var(--sx-navy)}.sx-chip:active{transform:scale(.96)}
+.sx-chip .n{font:700 11.5px/1 var(--display);padding:3px 7px;border-radius:999px;background:#E4EFF9}
+.sx-chip.on{background:var(--sx-navy);border-color:var(--sx-navy);color:#fff}
+.sx-chip.on .n{background:rgba(255,255,255,.2);color:#fff}
+.sx-count{margin:0 0 10px;font-size:13px;color:var(--slate)}
+.sx-rv{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.sx-rc{position:relative;overflow:hidden;background:#fff;border-radius:16px;padding:16px 18px 14px 22px;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08))}
+.sx-rc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.sx-rc.is-flagged{--c:var(--sx-clay)}.sx-rc.is-hidden{--c:var(--sx-gray)}.sx-rc.is-published{--c:var(--sx-green)}
+.sx-rc-h{display:flex;align-items:center;gap:10px}
+.sx-rc-who{display:grid;line-height:1.25;min-width:0}.sx-rc-who b{font-size:14.5px;color:var(--sx-navy)}.sx-rc-who span{font-size:12.5px;color:var(--slate)}
+.sx-rc-r{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--slate)}
+.sx-rc-st{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0;font-size:13px;font-weight:600;color:#12806A}
+.sx-rc-c{margin:8px 0 0;font-size:14.5px;color:var(--ink);overflow-wrap:anywhere}
+.sx-rc-f{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.sx-rc-f .tags{display:flex;gap:6px;align-items:center}
+.sx .av.sx-avg{background:linear-gradient(135deg,#1FA06F,#2BB3AE);color:#fff}
+.sx .av.sx-avb{background:var(--sx-blue);color:#fff}
+.sx-empty{padding:28px 0;color:var(--slate);text-align:center;font-size:14px}
+@media(min-width:760px){.sx-kpis{grid-template-columns:repeat(4,1fr)}.sx-cols{grid-template-columns:1fr 1fr}}
+@media(prefers-reduced-motion:no-preference){
+.sx.fx .sx-kpi{animation:sxUp .55s var(--sx-ease) both;animation-delay:calc(var(--i,0)*80ms)}
+.sx.fx .sx-card{animation:sxUp .6s var(--sx-ease) both;animation-delay:calc(300ms + var(--i,0)*100ms)}
+.sx.fx .sx-seg{animation:sxSeg .9s cubic-bezier(.3,.7,.2,1) both;animation-delay:calc(520ms + var(--i,0)*130ms)}
+.sx.fx .sx-bar i{animation:sxGrow .85s cubic-bezier(.3,.7,.2,1) both;animation-delay:calc(640ms + var(--i,0)*90ms)}
+.sx.fx .sx-lg li,.sx.fx .sx-nm li{animation:sxUp .45s var(--sx-ease) both;animation-delay:calc(600ms + var(--i,0)*80ms)}
+.sx.fx .sx-search,.sx.fx .sx-tabs,.sx.fx .sx-chips{animation:sxUp .5s var(--sx-ease) both;animation-delay:900ms}
+.sx.fx .sx-count{animation:sxFade .5s both;animation-delay:1000ms}
+.sx-in>li{animation:sxUp .42s var(--sx-ease) both;animation-delay:calc(var(--i,0)*50ms)}
+.sx.fx .sx-in>li{animation-delay:calc(1000ms + var(--i,0)*60ms)}
+.sx-in .tbl tr{animation:sxUp .42s var(--sx-ease) both}
+.sx.fx .sx-in .tbl tr{animation-delay:1000ms}
+.sx-in .tbl tbody tr:nth-child(1){animation-delay:0ms}
+.sx-in .tbl tbody tr:nth-child(2){animation-delay:45ms}
+.sx-in .tbl tbody tr:nth-child(3){animation-delay:90ms}
+.sx-in .tbl tbody tr:nth-child(4){animation-delay:135ms}
+.sx-in .tbl tbody tr:nth-child(5){animation-delay:180ms}
+.sx-in .tbl tbody tr:nth-child(6){animation-delay:225ms}
+.sx-in .tbl tbody tr:nth-child(7){animation-delay:270ms}
+.sx-in .tbl tbody tr:nth-child(8){animation-delay:315ms}
+.sx-in .tbl tbody tr:nth-child(9){animation-delay:360ms}
+.sx-in .tbl tbody tr:nth-child(10){animation-delay:405ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(1){animation-delay:1000ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(2){animation-delay:1055ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(3){animation-delay:1110ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(4){animation-delay:1165ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(5){animation-delay:1220ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(6){animation-delay:1275ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(7){animation-delay:1330ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(8){animation-delay:1385ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(9){animation-delay:1440ms}
+.sx.fx .sx-in .tbl tbody tr:nth-child(10){animation-delay:1495ms}
+.sx-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--sx-clay);opacity:0;animation:sxPing 1.8s ease-out infinite}
+.sx-rc,.sx-kpi{transition:transform .2s var(--sx-ease),box-shadow .2s}
+.sx-rc:hover{transform:translateY(-2px)}
+}
+@keyframes sxUp{from{opacity:0;transform:translateY(14px)}}
+@keyframes sxFade{from{opacity:0}}
+@keyframes sxSeg{from{stroke-dasharray:0 100}}
+@keyframes sxGrow{from{transform:scaleX(0)}}
+@keyframes sxPing{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+`;
+  document.head.appendChild(el);
+})();
+let SA_KEY = '', SA_FX = false;   // SA_FX: true only when you arrive on a section, so filters and live refreshes never replay the intro animation
+const SX = { green: '#1FA06F', clay: '#C4776A', gray: '#97A3B2', navy: '#0F2A4A', blue: '#2196F3', teal: '#2BB3AE' };
+const SX_GRAD = 'linear-gradient(90deg,#1FA06F,#41C09A)';
+const sxKpi = (label, val, key, sub, color, i, o = {}) => `<div class="sx-kpi${o.tint ? ' tint' : ''}" style="--kc:${color};--i:${i}"><dt>${label}${o.dot ? '<i class="sx-dot" aria-hidden="true"></i>' : ''}</dt><dd class="num"${o.plain ? '' : ` data-count="${val}" data-key="${key}"`}>${val}</dd><small>${sub}</small></div>`;
+const sxDonut = parts => {
+  const live = parts.filter(p => p.n), tot = live.reduce((a, p) => a + p.n, 0), gap = live.length > 1 ? 1.6 : 0; let off = 0;
+  const segs = live.map((p, i) => { const len = p.n / tot * 100, l = Math.max(len - gap, .5), s = `<circle class="sx-seg" cx="50" cy="50" r="42" pathLength="100" style="stroke:${p.color};--i:${i}" stroke-dasharray="${l} ${100 - l}" stroke-dashoffset="${-off}"/>`; off += len; return s; }).join('');
+  return `<svg class="sx-donut" viewBox="0 0 100 100" aria-hidden="true"><circle class="sx-track" cx="50" cy="50" r="42"/><g transform="rotate(-90 50 50)">${segs}</g></svg>`;
+};
+const sxLegend = parts => `<ul class="sx-lg">${parts.map((p, i) => `<li style="--i:${i}"><i style="--c:${p.color}"></i><span>${p.label}</span><span class="num">${p.n}</span></li>`).join('')}</ul>`;
+
 async function loadSuper() {
+  SA_KEY = '';
   const h = S.sa.hours;
   const [an, users, reports, reviews, avail] = await Promise.all([api('GET', '/superadmin/analytics?hours=' + h), api('GET', '/superadmin/users'), api('GET', '/superadmin/reports'), api('GET', '/superadmin/reviews'), api('GET', '/superadmin/availability?hours=' + h)]);
   Object.assign(S.sa, { an, users, reports, reviews, avail, loaded: true });
@@ -101,66 +227,27 @@ SAC.sstat = async t => {
   catch (e) { t.value = was; t.disabled = false; fail(e); }
 };
 
-/* ---------- Shared helpers: Availability + Reports (arrival animation, donut, KPI) ---------- */
-let SA_LAST = '';
-const saFresh = k => { const f = SA_LAST !== k; SA_LAST = k; return f; };   // animate a page only when you arrive on it, not on every refresh
-addEventListener('hashchange', () => { SA_LAST = ''; Object.keys(CU).forEach(k => k.startsWith('sa-') && delete CU[k]); });
-const skpi = (label, val, key, sub, cls = '', attrs = '') => `<${attrs ? 'button type="button"' : 'div'} class="kpi ${cls}" ${attrs}><dt>${label}</dt><dd class="num"${typeof val === 'number' ? ` data-count="${val}" data-key="${key}"` : ''}>${val}</dd>${sub ? `<small>${sub}</small>` : ''}</${attrs ? 'button' : 'div'}>`;
-const donut = (segs, big, small, key) => {
-  const live = segs.filter(s => s.v), tot = live.reduce((n, s) => n + s.v, 0) || 1; let off = 0;
-  const arcs = live.map((s, i) => { const p = s.v / tot * 100, len = Math.max(p - (live.length > 1 ? 1.6 : 0), .6);
-    const c = `<circle class="dn-seg ${s.c}" cx="21" cy="21" r="15.9155" pathLength="100" style="stroke-dasharray:${len.toFixed(2)} ${(100 - len).toFixed(2)};stroke-dashoffset:${(-off).toFixed(2)};--i:${i}"/>`; off += p; return c; }).join('');
-  return `<div class="dn" role="img" aria-label="${segs.map(s => s.v + ' ' + s.l).join(', ')}"><svg viewBox="0 0 42 42" aria-hidden="true"><circle class="dn-bg" cx="21" cy="21" r="15.9155"/>${arcs}</svg><div class="dn-c"><b class="num"><span data-count="${big}" data-key="${key}">${big}</span>%</b><span>${small}</span></div></div>`;
-};
-
 /* ---------- Availability monitor ---------- */
-const AV_F = [['all', 'All'], ['available', 'Available'], ['low', 'Low supply'], ['out', 'Out of water'], ['closed', 'Closed'], ['stale', 'Outdated']];
-const avList = () => { const f = S.sa.af || 'all', q = (S.sa.aq || '').trim().toLowerCase();
-  return S.sa.avail.items.filter(x => (f === 'all' || (f === 'stale' ? x.stale : x.status === f)) && (!q || (x.name + ' ' + x.addr).toLowerCase().includes(q))); };
-const avTable = l => { const lim = S.sa.avail.hours * 3600000;
-  return tbl(['Station', 'Status', 'Last update', 'Changes (7 d)', 'Community (3 h)', 'Freshness', 'Set status'], l.map(x => { const r = (Date.now() - x.upd) / lim, lv = r >= 1 ? 'bad' : r >= .5 ? 'warn' : 'good';
-    return [`<b>${esc(x.name)}</b><br><span class="muted">${esc(x.addr)}</span>`, `<span class="st st-${x.status}">${gauge(x.status, 14)}<span>${SM[x.status].label}</span></span>`, `${dateTime(x.upd)}<br><span class="muted">${ago(x.upd)}</span>`,
-      `<span class="chg num" title="${x.changes7d} status updates in the last 7 days"><i style="--w:${Math.min(48, x.changes7d * 6)}px"></i>${x.changes7d}</span>`, `<span class="num"><span class="cm-y">${x.yes} water</span> / <span class="cm-n">${x.no} none</span></span>`,
-      `<span class="fresh f-${lv}" title="${ago(x.upd)}"><i style="--w:${Math.max(7, Math.min(100, r * 100)).toFixed(0)}%"></i></span><small class="fresh-t f-${lv}">${x.stale ? 'Outdated' : 'Fresh'} · ${ago(x.upd)}</small>`, statSelect(get(x.id) || { id: x.id, name: x.name, status: x.status })]; }), 'No stations match this view.'); };
-const avFilter = () => { const l = avList(); $('#atbl').innerHTML = avTable(l); $('#acount').textContent = `${l.length} of ${S.sa.avail.items.length} stations`; };
 SV.availability = () => {
-  const fx = saFresh('availability'), a = S.sa.avail, items = a.items, tot = items.length || 1, stale = items.filter(x => x.stale).length, f = S.sa.af || 'all';
-  const n = k => items.filter(x => x.status === k).length, cnt = k => k === 'all' ? items.length : k === 'stale' ? stale : n(k);
-  const avgAge = items.length ? items.reduce((s, x) => s + (Date.now() - x.upd), 0) / items.length : 0, chg = items.reduce((s, x) => s + x.changes7d, 0), ok = pct(n('available'), tot);
-  return `<div class="sa sa-av${fx ? ' sa-fx' : ''}">${aHead('Availability monitor', 'Latest status of every station, and which ones have not been updated recently.', `<div class="select sm"><label class="sr" for="hrs">Outdated after</label><select id="hrs" data-sa="hours">${[[6, '6 hours'], [12, '12 hours'], [24, '24 hours'], [72, '3 days'], [168, '7 days']].map(o => `<option value="${o[0]}" ${a.hours === o[0] ? 'selected' : ''}>Outdated after ${o[1]}</option>`).join('')}</select>${ico('chevd', 14)}</div>`)}
-  <dl class="kpis small">${skpi('Stations monitored', items.length, 'sa-av-n', 'in the network', 'k-aqua')}${skpi(`Outdated${stale ? '<i class="sa-ping" aria-hidden="true"></i>' : ''}`, stale, 'sa-av-s', `no update in ${a.hours >= 24 ? a.hours / 24 + ' d' : a.hours + ' h'}`, stale ? 'k-alert' : 'k-ok')}${skpi('Average age of status', items.length ? dur(avgAge) : '–', 'sa-av-a', 'across all stations', 'k-low')}${skpi('Changes, last 7 days', chg, 'sa-av-c', 'status updates', 'k-aqua')}</dl>
-  ${sec('Supply overview', `<div class="sa-ov">${donut(SKEYS.map(k => ({ c: 'dn-' + k, v: n(k), l: SM[k].label.toLowerCase() })), ok, 'available', 'sa-av-p')}<div class="stat-rows">${SKEYS.map((k, i) => `<div class="stat-row"><span class="st st-${k}">${gauge(k, 16)}<span>${SM[k].label}</span></span><i class="stat-bar"><i class="seg-${k} sa-grow" style="width:${pct(n(k), tot)}%;--i:${i}"></i></i><b class="num">${n(k)}</b><span class="muted num">${pct(n(k), tot)}%</span></div>`).join('')}</div></div>`)}
-  <div class="toolbar sa-bar"><div class="search">${ico('search', 18)}<label class="sr" for="aq">Search stations</label><input id="aq" data-sa="aq" type="search" value="${esc(S.sa.aq || '')}" placeholder="Search station or address" autocomplete="off"></div></div>
-  <div class="sa-chips" role="group" aria-label="Filter stations">${AV_F.map(c => `<button type="button" class="sa-chip c-${c[0]} ${f === c[0] ? 'on' : ''}" aria-pressed="${f === c[0]}" data-act="avf" data-p="${c[0]}">${c[1]} <b class="num">${cnt(c[0])}</b></button>`).join('')}</div>
-  <p class="count" id="acount" aria-live="polite">${avList().length} of ${items.length} stations</p><div id="atbl">${avTable(avList())}</div></div>`;
+  const a = S.sa.avail, st = S.sa.an.stations, items = a.items, tot = items.length || 1, stale = items.filter(x => x.stale).length;
+  const avgAge = items.length ? items.reduce((n, x) => n + (Date.now() - x.upd), 0) / items.length : 0;
+  return `${aHead('Availability monitor', 'Latest status of every station, and which ones have not been updated recently.', `<div class="select sm"><label class="sr" for="hrs">Outdated after</label><select id="hrs" data-sa="hours">${[[6, '6 hours'], [12, '12 hours'], [24, '24 hours'], [72, '3 days'], [168, '7 days']].map(o => `<option value="${o[0]}" ${a.hours === o[0] ? 'selected' : ''}>Outdated after ${o[1]}</option>`).join('')}</select>${ico('chevd', 14)}</div>`)}
+  <dl class="kpis small">${kpi('Stations monitored', items.length)}${kpi('Outdated', stale, `no update in ${a.hours >= 24 ? a.hours / 24 + ' d' : a.hours + ' h'}`, stale ? 'k-alert' : 'k-aqua')}${kpi('Average age of status', items.length ? dur(avgAge) : '–', 'across all stations')}${kpi('Changes, last 7 days', items.reduce((n, x) => n + x.changes7d, 0), 'status updates')}</dl>
+  ${sec('Statistics', `<div class="stat-rows">${SKEYS.map(k => `<div class="stat-row"><span class="st st-${k}">${gauge(k, 16)}<span>${SM[k].label}</span></span><i class="stat-bar"><i class="seg-${k}" style="width:${pct(st[k], tot)}%"></i></i><b class="num">${st[k]}</b><span class="muted num">${pct(st[k], tot)}%</span></div>`).join('')}</div>`)}
+  ${tbl(['Station', 'Status', 'Last update', 'Changes (7 d)', 'Community (3 h)', 'Freshness', 'Set status'], items.map(x => [`<b>${esc(x.name)}</b><br><span class="muted">${esc(x.addr)}</span>`, `<span class="st st-${x.status}">${gauge(x.status, 14)}<span>${SM[x.status].label}</span></span>`, `${dateTime(x.upd)}<br><span class="muted">${ago(x.upd)}</span>`, `<span class="num">${x.changes7d}</span>`, `<span class="num">${x.yes} water / ${x.no} none</span>`, x.stale ? `<span class="tag rs-rejected">${ico('alert', 12)} Outdated</span>` : '<span class="tag ok">Fresh</span>', statSelect(get(x.id) || { id: x.id, name: x.name, status: x.status })]), 'No stations.')}`;
 };
-SAA.avf = el => { S.sa.af = el.dataset.p; $$('.sa-chip').forEach(b => { const on = b.dataset.p === S.sa.af; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); avFilter(); };
-SAI.aq = t => { S.sa.aq = t.value; avFilter(); };
 SAC.hours = async t => { S.sa.hours = +t.value; try { await saReload(['an', 'avail']); renderKeep(); } catch (e) { fail(e); } };
 
 /* ---------- Reports ---------- */
 const RSTATS = [['pending', 'Pending'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['resolved', 'Resolved'], ['all', 'All']];
-const RCOL = { pending: 'dn-low', approved: 'dn-aqua', rejected: 'dn-out', resolved: 'dn-available' };
-const rList = () => { const f = S.sa.rs, q = (S.sa.rq || '').trim().toLowerCase();
-  return S.sa.reports.filter(r => (f === 'all' || r.status === f) && (!q || [r.station, r.by, r.type, r.note, r.adminNote].join(' ').toLowerCase().includes(q))); };
-const rTable = l => tbl(['Reported', 'Station', 'By', 'Issue', 'Details', 'Status', ''], l.map(r => { const late = r.status === 'pending' && Date.now() - r.t > 864e5;
-  return [`${dateTime(r.t)}<br><span class="wait ${late ? 'late' : ''}">${r.status === 'pending' ? 'Waiting ' + dur(Date.now() - r.t) : ago(r.t)}</span>`, `<a href="#/station/${r.sid}">${esc(r.station)}</a>`, esc(r.by), `<span class="iss-t">${esc(r.type)}</span>`, esc(r.note || '—') + (r.adminNote ? `<br><span class="muted">Note: ${esc(r.adminNote)}</span>` : ''), rtag(r.status),
-    `<span class="btnline">${r.status === 'pending' ? `<button class="btn sm outline" data-act="rstat" data-id="${r.id}" data-p="approved">Approve</button><button class="btn sm quiet danger" data-act="rstat" data-id="${r.id}" data-p="rejected">Reject</button>` : ''}<button class="btn sm quiet" data-act="srev" data-id="${r.id}">Update</button></span>`]; }), S.sa.rq ? 'No reports match your search.' : 'No reports in this view.');
-const rFilter = () => { const l = rList(); $('#rtbl').innerHTML = rTable(l); $('#rcount').textContent = `${l.length} of ${S.sa.reports.length} reports`; };
 SV.reports = () => {
-  const fx = saFresh('reports'), L = S.sa.reports, f = S.sa.rs, cnt = k => k === 'all' ? L.length : L.filter(r => r.status === k).length, tot = L.length, pend = L.filter(r => r.status === 'pending'), done = tot - pend.length;
-  const oldest = pend.length ? dur(Date.now() - Math.min(...pend.map(r => r.t))) : '', stations = new Set(L.map(r => r.sid)).size, rate = pct(done, tot);
-  const by = {}; L.forEach(r => by[r.type] = (by[r.type] || 0) + 1); const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 5), mx = top.length ? top[0][1] : 1;
-  return `<div class="sa sa-rp${fx ? ' sa-fx' : ''}">${aHead('Report management', 'Review corrections from users. Approve valid reports, reject the rest, and mark them resolved once fixed.')}
-  <dl class="kpis small">${skpi('Total reports', tot, 'sa-rp-t', 'from all stations', 'k-aqua')}${skpi(`Pending${pend.length ? '<i class="sa-ping" aria-hidden="true"></i>' : ''}`, pend.length, 'sa-rp-p', pend.length ? `oldest waiting ${oldest}` : 'all caught up', pend.length ? 'k-alert' : 'k-ok', 'data-act="sars" data-p="pending"')}${skpi('Reviewed', done, 'sa-rp-d', `${rate}% of all reports`, 'k-ok', 'data-act="sars" data-p="all"')}${skpi('Stations affected', stations, 'sa-rp-s', 'with at least one report', 'k-low')}</dl>
-  <div class="sa-two">${sec('Report status', `<div class="sa-ov">${donut(RSTATS.slice(0, 4).map(c => ({ c: RCOL[c[0]], v: cnt(c[0]), l: c[1].toLowerCase() })), rate, 'reviewed', 'sa-rp-r')}<ul class="dn-leg">${RSTATS.slice(0, 4).map((c, i) => `<li style="--i:${i}"><button type="button" data-act="sars" data-p="${c[0]}"><i class="${RCOL[c[0]]}"></i><span>${c[1]}</span><b class="num">${cnt(c[0])}</b></button></li>`).join('')}</ul></div>`)}
-  ${sec('Most reported issues', top.length ? `<ul class="iss-bars">${top.map(([t, c], i) => `<li style="--i:${i}"><span class="iss-n" title="${esc(t)}">${esc(t)}</span><i class="iss-bar"><i class="sa-grow" style="width:${Math.max(6, c / mx * 100)}%"></i></i><b class="num">${c}</b></li>`).join('')}</ul>` : '<p class="muted pad">No reports yet.</p>')}</div>
-  <div class="toolbar sa-bar"><div class="search">${ico('search', 18)}<label class="sr" for="rq">Search reports</label><input id="rq" data-sa="rq" type="search" value="${esc(S.sa.rq || '')}" placeholder="Search station, reporter or issue" autocomplete="off"></div></div>
+  const L = S.sa.reports, f = S.sa.rs, l = L.filter(r => f === 'all' || r.status === f), cnt = k => k === 'all' ? L.length : L.filter(r => r.status === k).length;
+  return `${aHead('Report management', 'Review corrections from users. Approve valid reports, reject the rest, and mark them resolved once fixed.')}
   <div class="tabs" role="tablist" aria-label="Filter reports">${RSTATS.map(c => `<button role="tab" class="tab ${f === c[0] ? 'on' : ''}" aria-selected="${f === c[0]}" data-act="sars" data-p="${c[0]}">${c[1]} <span class="num">${cnt(c[0])}</span></button>`).join('')}</div>
-  <p class="count" id="rcount" aria-live="polite">${rList().length} of ${tot} reports</p><div id="rtbl">${rTable(rList())}</div></div>`;
+  ${tbl(['Reported', 'Station', 'By', 'Issue', 'Details', 'Status', ''], l.map(r => [`${dateTime(r.t)}`, `<a href="#/station/${r.sid}">${esc(r.station)}</a>`, esc(r.by), esc(r.type), esc(r.note || '—') + (r.adminNote ? `<br><span class="muted">Note: ${esc(r.adminNote)}</span>` : ''), rtag(r.status),
+    `<span class="btnline">${r.status === 'pending' ? `<button class="btn sm outline" data-act="rstat" data-id="${r.id}" data-p="approved">Approve</button><button class="btn sm quiet danger" data-act="rstat" data-id="${r.id}" data-p="rejected">Reject</button>` : ''}<button class="btn sm quiet" data-act="srev" data-id="${r.id}">Update</button></span>`]), 'No reports in this view.')}`;
 };
-SAA.sars = el => { S.sa.rs = el.dataset.p; $$('.tabs .tab').forEach(b => { const on = b.dataset.p === S.sa.rs; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }); rFilter(); };
-SAI.rq = t => { S.sa.rq = t.value; rFilter(); };
+SAA.sars = el => { S.sa.rs = el.dataset.p; render(); };
 SAA.srev = el => {
   const r = S.sa.reports.find(x => x.id == el.dataset.id); if (!r) return;
   modal(`<div class="dlg-h"><h2>Update report</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div>
@@ -177,35 +264,72 @@ SAF.repform = async f => {
 };
 
 /* ---------- Reviews ---------- */
-const VSTATS = [['flagged', 'Flagged'], ['hidden', 'Hidden'], ['all', 'All']];
+const VSTATS = [['flagged', 'Flagged'], ['hidden', 'Hidden'], ['published', 'Published'], ['all', 'All']];
+const rvState = r => r.status === 'hidden' ? 'hidden' : r.flags > 0 ? 'flagged' : 'published';
+const rvCounts = L => { const c = { flagged: 0, hidden: 0, published: 0, all: L.length }; L.forEach(r => c[rvState(r)]++); return c; };
+const rvFiltered = () => { const f = S.sa.vs, q = (S.sa.vq || '').trim().toLowerCase(); return S.sa.reviews.filter(r => (f === 'all' || rvState(r) === f) && (!q || (r.station + ' ' + r.by + ' ' + (r.comment || '')).toLowerCase().includes(q))); };
+const rvBtns = r => r.status === 'hidden'
+  ? `<button class="btn sm outline" data-act="rvmod" data-id="${r.id}" data-p="visible">Restore</button>`
+  : `<button class="btn sm outline" data-act="rvmod" data-id="${r.id}" data-p="hidden">Hide</button>${r.flags ? `<button class="btn sm quiet" data-act="rvmod" data-id="${r.id}" data-p="visible">Dismiss flags</button>` : ''}`;
+const rvCard = (r, i) => { const st = rvState(r);
+  return `<li class="sx-rc is-${st}" style="--i:${Math.min(i, 9)}"><div class="sx-rc-h">${avatar({ name: r.by }, 36, 'sx-avg')}<div class="sx-rc-who"><b>${esc(r.by)}</b><span title="${esc(dateTime(r.t))}">${ago(r.t)}</span></div><div class="sx-rc-r">${stars(r.rating, 12)}<span class="num">${(+r.rating).toFixed(1)}</span></div></div>
+  <a class="sx-rc-st" href="#/station/${r.sid}">${ico('store', 14)}<span>${esc(r.station)}</span></a>
+  <p class="sx-rc-c${r.comment ? '' : ' muted'}">${esc(r.comment || 'No comment was written.')}</p>
+  <div class="sx-rc-f"><span class="tags">${st === 'hidden' ? '<span class="tag rs-rejected">Hidden</span>' : st === 'flagged' ? '<span class="tag rs-rejected">Flagged</span>' : '<span class="tag ok">Published</span>'}${r.flags ? `<span class="muted">${r.flags} flag${r.flags === 1 ? '' : 's'}</span>` : ''}</span><span class="btnline">${rvBtns(r)}<button class="btn sm quiet danger" data-act="rvrm" data-id="${r.id}">Delete</button></span></div></li>`; };
+const rvCards = l => l.length ? l.map(rvCard).join('') : '<li class="sx-empty">No reviews in this view.</li>';
 SV.reviews = () => {
-  const L = S.sa.reviews, f = S.sa.vs, l = L.filter(r => f === 'all' || (f === 'flagged' ? r.flags > 0 && r.status === 'visible' : r.status === 'hidden')), cnt = k => k === 'all' ? L.length : L.filter(r => k === 'flagged' ? r.flags > 0 && r.status === 'visible' : r.status === 'hidden').length;
-  return `${aHead('Review management', 'Reviews that users flagged appear first. Hide inappropriate feedback or remove it entirely.')}
-  <div class="tabs" role="tablist" aria-label="Filter reviews">${VSTATS.map(c => `<button role="tab" class="tab ${f === c[0] ? 'on' : ''}" aria-selected="${f === c[0]}" data-act="savs" data-p="${c[0]}">${c[1]} <span class="num">${cnt(c[0])}</span></button>`).join('')}</div>
-  ${tbl(['Updated', 'Station', 'Author', 'Rating', 'Comment', 'Flags', 'Status', ''], l.map(r => [dateTime(r.t), `<a href="#/station/${r.sid}">${esc(r.station)}</a>`, esc(r.by), stars(r.rating, 12), esc(r.comment || '—'), r.flags ? `<span class="tag rs-rejected">${r.flags}</span>` : '<span class="muted">0</span>', r.status === 'hidden' ? '<span class="tag rs-rejected">Hidden</span>' : '<span class="tag ok">Visible</span>',
-    `<span class="btnline">${r.status === 'hidden' ? `<button class="btn sm outline" data-act="rvmod" data-id="${r.id}" data-p="visible">Restore</button>` : `<button class="btn sm outline" data-act="rvmod" data-id="${r.id}" data-p="hidden">Hide</button>${r.flags ? `<button class="btn sm quiet" data-act="rvmod" data-id="${r.id}" data-p="visible">Dismiss flags</button>` : ''}`}<button class="btn sm quiet danger" data-act="rvrm" data-id="${r.id}">Delete</button></span>`]), 'No reviews in this view.')}`;
+  const L = S.sa.reviews, c = rvCounts(L), n = L.length, an = S.sa.an && S.sa.an.reviews, f = S.sa.vs, l = rvFiltered();
+  const avg = an && an.avg ? an.avg : n ? L.reduce((t, r) => t + (+r.rating || 0), 0) / n : 0;
+  const dist = [5, 4, 3, 2, 1].map(k => L.filter(r => Math.min(5, Math.max(1, Math.round(r.rating))) === k).length), mx = Math.max(1, ...dist), pub = pct(c.published, n);
+  const parts = [{ label: 'Published', n: c.published, color: SX.green }, { label: 'Flagged', n: c.flagged, color: SX.clay }, { label: 'Hidden', n: c.hidden, color: SX.gray }];
+  return `<div class="sx${SA_FX ? ' fx' : ''}">${aHead('Review management', 'Reviews that users flagged appear first. Hide inappropriate feedback or remove it entirely.')}
+  <dl class="sx-kpis">${sxKpi('Total reviews', n, 'sx-rv-n', 'from all stations', SX.green, 0)}${sxKpi('Average rating', n ? avg.toFixed(1) : '–', 'sx-rv-avg', 'out of 5 stars', SX.clay, 1, { plain: true })}${sxKpi('Flagged', c.flagged, 'sx-rv-fl', 'need your attention', SX.clay, 2, { tint: true, dot: c.flagged > 0 })}${sxKpi('Hidden', c.hidden, 'sx-rv-hd', 'not shown to users', '#51607A', 3)}</dl>
+  <div class="sx-cols"><section class="sx-card" style="--i:0"><h2>Moderation</h2><div class="sx-dn"><div class="sx-donut-w" role="img" aria-label="${pub}% published: ${c.published} published, ${c.flagged} flagged, ${c.hidden} hidden">${sxDonut(parts)}<div class="sx-dc"><b><span class="num" data-count="${pub}" data-key="sx-rv-pct">${pub}</span>%</b><small>published</small></div></div>${sxLegend(parts)}</div></section>
+  <section class="sx-card" style="--i:1"><h2>Rating breakdown</h2><div class="sx-bars">${[5, 4, 3, 2, 1].map((k, i) => `<div class="sx-br"><span>${k} star${k > 1 ? 's' : ''}</span><span class="sx-bar"><i style="width:${dist[i] / mx * 100}%;--c:${k > 3 ? SX_GRAD : SX.clay};--i:${i}"></i></span><b class="num">${dist[i]}</b></div>`).join('')}</div></section></div>
+  <div class="sx-search">${ico('search', 18)}<label class="sr" for="vq">Search reviews</label><input id="vq" data-sa="vq" type="search" value="${esc(S.sa.vq || '')}" placeholder="Search station, author or comment" autocomplete="off"></div>
+  <div class="sx-tabs" role="tablist" aria-label="Filter reviews">${VSTATS.map(t => `<button role="tab" class="sx-tab ${f === t[0] ? 'on' : ''}" aria-selected="${f === t[0]}" data-act="savs" data-p="${t[0]}">${t[1]} <span class="num">${c[t[0]]}</span></button>`).join('')}</div>
+  <p class="sx-count" id="rvcount" aria-live="polite">${l.length} of ${n} reviews</p><ul class="sx-rv${SA_FX ? ' sx-in' : ''}" id="rvlist">${rvCards(l)}</ul></div>`;
 };
-SAA.savs = el => { S.sa.vs = el.dataset.p; render(); };
+const rvFilter = anim => {
+  const l = rvFiltered(), box = $('#rvlist'); if (!box) return;
+  box.className = anim ? 'sx-rv sx-in' : 'sx-rv'; box.innerHTML = rvCards(l);
+  $('#rvcount').textContent = `${l.length} of ${S.sa.reviews.length} reviews`;
+  $$('.sx-tab[data-act=savs]').forEach(b => { const on = b.dataset.p === S.sa.vs; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+};
+SAA.savs = el => { S.sa.vs = el.dataset.p; rvFilter(true); };
+SAI.vq = t => { S.sa.vq = t.value; rvFilter(false); };
 SAA.rvmod = async el => { busy(el, true, '…'); try { await api('PUT', '/superadmin/reviews/' + el.dataset.id, { status: el.dataset.p }); await saReload(['an', 'reviews']); renderKeep(); toast(el.dataset.p === 'hidden' ? 'Review hidden from users' : 'Review is visible', 'ok'); } catch (e) { busy(el, false); fail(e); } };
 SAA.rvrm = el => modal(`<div class="dlg-h"><h2>Delete this review?</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div><p class="muted">The review is removed permanently. To keep a record, choose Hide instead.</p><div class="btnrow"><button class="btn danger-solid" data-act="rvrmok" data-id="${el.dataset.id}">Delete review</button><button class="btn quiet" data-act="close">Cancel</button></div>`, 'Delete review');
 SAA.rvrmok = async el => { busy(el, true, 'Deleting…'); try { await api('DELETE', '/superadmin/reviews/' + el.dataset.id); closeModal(); await saReload(['an', 'reviews']); renderKeep(); toast('Review deleted', 'ok'); } catch (e) { busy(el, false); closeModal(); fail(e); } };
 
 /* ---------- Users ---------- */
+const UFILT = [['all', 'All'], ['user', 'Users'], ['admin', 'Station admins'], ['superadmin', 'System admins'], ['inactive', 'Deactivated']];
+const uMatch = (u, r, q) => (r === 'all' || (r === 'inactive' ? !u.active : u.role === r)) && (!q || (u.name + ' ' + u.email).toLowerCase().includes(q));
+const uCnt = k => S.sa.users.filter(u => uMatch(u, k, '')).length;
 SV.users = () => {
-  const q = S.sa.uq.trim().toLowerCase(), r = S.sa.ur, me = S.user.id;
-  const l = S.sa.users.filter(u => (r === 'all' || (r === 'inactive' ? !u.active : u.role === r)) && (!q || (u.name + ' ' + u.email).toLowerCase().includes(q)));
-  return `${aHead('User management', 'Activate or deactivate accounts and assign roles. Deactivated users are signed out immediately.')}
-  <div class="toolbar"><div class="search">${ico('search', 18)}<label class="sr" for="uq">Search users</label><input id="uq" data-sa="uq" type="search" value="${esc(S.sa.uq)}" placeholder="Search name or email" autocomplete="off"></div>
-  <div class="select sm"><label class="sr" for="ur">Filter</label><select id="ur" data-sa="ur">${[['all', 'All users'], ['user', 'Users'], ['admin', 'Station admins'], ['superadmin', 'System admins'], ['inactive', 'Deactivated']].map(o => `<option value="${o[0]}" ${r === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>${ico('chevd', 14)}</div></div>
-  <p class="count" id="ucount" aria-live="polite">${l.length} of ${S.sa.users.length} users</p><div id="utbl">${userTable(l, me)}</div>`;
+  const U = S.sa.users, q = S.sa.uq.trim().toLowerCase(), r = S.sa.ur, me = S.user.id, n = U.length, l = U.filter(u => uMatch(u, r, q));
+  const act = U.filter(u => u.active).length, adm = U.filter(u => u.role === 'admin').length, wk = U.filter(u => Date.now() - u.since < 7 * 864e5).length;
+  const parts = [{ label: 'Users', n: U.filter(u => u.active && u.role === 'user').length, color: SX.blue }, { label: 'Station admins', n: U.filter(u => u.active && u.role === 'admin').length, color: SX.teal }, { label: 'System admins', n: U.filter(u => u.active && u.role === 'superadmin').length, color: SX.navy }, { label: 'Deactivated', n: n - act, color: SX.gray }];
+  const newest = U.slice().sort((a, b) => b.since - a.since).slice(0, 5);
+  return `<div class="sx${SA_FX ? ' fx' : ''}">${aHead('User management', 'Activate or deactivate accounts and assign roles. Deactivated users are signed out immediately.')}
+  <dl class="sx-kpis">${sxKpi('Total users', n, 'sx-u-n', 'registered accounts', SX.teal, 0)}${sxKpi('Active', act, 'sx-u-act', pct(act, n) + '% of all users', SX.blue, 1)}${sxKpi('Station admins', adm, 'sx-u-adm', 'manage one station each', '#51607A', 2)}${sxKpi('New this week', wk, 'sx-u-wk', 'joined in the last 7 days', SX.teal, 3)}</dl>
+  <div class="sx-cols"><section class="sx-card" style="--i:0"><h2>Accounts by role</h2><div class="sx-dn"><div class="sx-donut-w" role="img" aria-label="${n} accounts: ${parts.map(p => p.n + ' ' + p.label.toLowerCase()).join(', ')}">${sxDonut(parts)}<div class="sx-dc"><b class="num" data-count="${n}" data-key="sx-u-tot">${n}</b><small>accounts</small></div></div>${sxLegend(parts)}</div></section>
+  <section class="sx-card" style="--i:1"><h2>Newest members</h2>${newest.length ? `<ul class="sx-nm">${newest.map((u, i) => `<li style="--i:${i}">${avatar({ name: u.name, avatar: u.avatar }, 38, 'sx-avb')}<span class="who"><b>${esc(u.name)}</b><span class="em">${esc(u.email)}</span></span><span class="rt"><span class="tag role-${u.role}">${ROLE_L[u.role]}</span><span>${ago(u.since)}</span></span></li>`).join('')}</ul>` : '<p class="muted">No members yet.</p>'}</section></div>
+  <div class="sx-search">${ico('search', 18)}<label class="sr" for="uq">Search users</label><input id="uq" data-sa="uq" type="search" value="${esc(S.sa.uq)}" placeholder="Search name or email" autocomplete="off"></div>
+  <div class="sx-chips" role="group" aria-label="Filter users">${UFILT.map(c => `<button type="button" class="sx-chip ${r === c[0] ? 'on' : ''}" aria-pressed="${r === c[0]}" data-act="saur" data-p="${c[0]}">${c[1]} <span class="n">${uCnt(c[0])}</span></button>`).join('')}</div>
+  <p class="sx-count" id="ucount" aria-live="polite">${l.length} of ${n} users</p><div id="utbl"${SA_FX ? ' class="sx-in"' : ''}>${userTable(l, me)}</div></div>`;
 };
 const userTable = (l, me) => tbl(['User', 'Role', 'Station', 'Activity', 'Joined', 'Status', ''], l.map(u => [`<span class="who">${avatar({ name: u.name, avatar: u.avatar }, 32)}<span><b>${esc(u.name)}${u.id === me ? ' (you)' : ''}</b><br><span class="muted">${esc(u.email)}</span></span></span>`,
   `<span class="tag role-${u.role}">${ROLE_L[u.role]}</span>`, u.station ? esc((get(u.station) || {}).name || u.station) : '<span class="muted">—</span>', `<span class="num muted">${u.saved} saved · ${u.reviews} reviews · ${u.reports} reports</span>`, new Date(u.since).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' }),
   u.active ? '<span class="tag ok">Active</span>' : '<span class="tag rs-rejected">Deactivated</span>',
   u.id === me ? '' : `<span class="btnline"><button class="btn sm outline" data-act="urole" data-id="${u.id}">Role</button><button class="btn sm quiet ${u.active ? 'danger' : ''}" data-act="uact" data-id="${u.id}" data-p="${u.active ? 0 : 1}">${u.active ? 'Deactivate' : 'Activate'}</button></span>`]), 'No users match.');
-const usersFilter = () => { const q = S.sa.uq.trim().toLowerCase(), r = S.sa.ur, l = S.sa.users.filter(u => (r === 'all' || (r === 'inactive' ? !u.active : u.role === r)) && (!q || (u.name + ' ' + u.email).toLowerCase().includes(q))); $('#utbl').innerHTML = userTable(l, S.user.id); $('#ucount').textContent = `${l.length} of ${S.sa.users.length} users`; };
-SAI.uq = t => { S.sa.uq = t.value; usersFilter(); };
-SAC.ur = t => { S.sa.ur = t.value; usersFilter(); };
+const usersFilter = anim => {
+  const q = S.sa.uq.trim().toLowerCase(), r = S.sa.ur, l = S.sa.users.filter(u => uMatch(u, r, q)), box = $('#utbl'); if (!box) return;
+  box.className = anim ? 'sx-in' : ''; box.innerHTML = userTable(l, S.user.id); $('#ucount').textContent = `${l.length} of ${S.sa.users.length} users`;
+  $$('.sx-chip[data-act=saur]').forEach(b => { const on = b.dataset.p === r; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+};
+SAI.uq = t => { S.sa.uq = t.value; usersFilter(false); };
+SAA.saur = el => { S.sa.ur = el.dataset.p; usersFilter(true); };
 SAA.uact = el => {
   const u = S.sa.users.find(x => x.id == el.dataset.id), on = el.dataset.p === '1'; if (!u) return;
   if (on) return SAA.uactok({ dataset: { id: u.id, p: 1 } });
@@ -230,6 +354,9 @@ SAF.roleform = async f => {
 /* ---------- Shell ---------- */
 function superView(sec) {
   if (!SV[sec]) sec = 'overview';
+  SA_FX = !!S.sa.loaded && (S.user.id + ':' + sec) !== SA_KEY;   // intro animation only on arrival at a section
+  if (S.sa.loaded) SA_KEY = S.user.id + ':' + sec;
+  if (SA_FX) Object.keys(CU).forEach(k => { if (k.startsWith('sx-')) delete CU[k]; });
   const a = S.sa.an, pend = S.sa.loaded ? S.sa.reports.filter(r => r.status === 'pending').length : 0, flagged = S.sa.loaded && a ? a.reviews.flagged : 0;
   return `<div class="adm sup"><aside class="adm-side"><a class="brand" href="#/admin">${logo(24, { light: true })}<span>AquaFind</span></a><p class="adm-st"><span>System console</span>${esc(S.user.name)}</p>
   <nav aria-label="System sections">${SA_SECTIONS.map(x => `<a href="#/admin/${x[0]}" class="${sec === x[0] ? 'on' : ''}" ${sec === x[0] ? 'aria-current="page"' : ''}>${ico(x[2], 17)}<span>${x[1]}</span>${x[0] === 'reports' && pend ? `<b class="cnt num">${pend}</b>` : ''}${x[0] === 'reviews' && flagged ? `<b class="cnt num">${flagged}</b>` : ''}</a>`).join('')}</nav>
