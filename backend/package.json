@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node --no-warnings --env-file-if-exists=.env server.js",
     "test": "node --env-file-if-exists=.env test/smoke.js",
+    "test:oauth": "node --env-file-if-exists=.env test/oauth.js",
     "migrate:sqlite": "node --no-warnings --env-file-if-exists=.env scripts/migrate-sqlite-to-supabase.js"
   },
   "engines": { "node": ">=22.13" },

@@ -33,7 +33,7 @@ The tables are created in Supabase, with sample data, on first run. To reset: in
 - Admin: admin@aquafind.com / admin123 (manages BlueDrop, station s1)
 
 ## API (all except /api/auth/* need "Authorization: Bearer <token>")
-- POST /api/auth/register | /login | /social | /forgot
+- POST /api/auth/register | /login | /oauth | /forgot; GET /api/auth/config
 - GET/PUT /api/me
 - GET /api/stations; PUT /api/stations/:id (admin); PUT /api/stations/:id/availability (admin)
 - GET /api/saved; POST/DELETE /api/saved/:id
@@ -42,7 +42,7 @@ The tables are created in Supabase, with sample data, on first run. To reset: in
 
 ## Notes
 - Passwords are hashed (bcrypt); sessions use JWT. Change JWT_SECRET before real deployment.
-- Google/Facebook login is simulated (POST /api/auth/social). Replace with real OAuth later.
+- Google/Facebook login is real OAuth through Supabase Auth (see DEPLOY.md section 6). The browser signs in with Supabase; POST /api/auth/oauth verifies the Supabase session and issues AquaFind's normal token. Google/Facebook accounts have no AquaFind password and are never merged with an existing account just because the e-mail matches.
 - The map uses Leaflet + OpenStreetMap (no API key). Tiles need an internet connection; Leaflet itself is bundled in frontend/vendor/leaflet.
 - In-app directions (route line + turn-by-turn steps for drive, bike and walk) use the free OpenStreetMap routing service at routing.openstreetmap.de. It needs internet and is meant for light use.
 

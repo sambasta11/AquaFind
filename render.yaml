@@ -18,4 +18,6 @@ services:
       - { key: ADMIN_PASSWORD, sync: false }
       - { key: SUPERADMIN_EMAIL, sync: false }
       - { key: SUPERADMIN_PASSWORD, sync: false }
+      - { key: SUPABASE_URL, sync: false }        # Google/Facebook sign-in: Project URL
+      - { key: SUPABASE_ANON_KEY, sync: false }   # Google/Facebook sign-in: PUBLIC anon/publishable key (never the service_role key)
       - { key: ANTHROPIC_API_KEY, sync: false }

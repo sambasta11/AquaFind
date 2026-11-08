@@ -3,12 +3,12 @@
    - HTML/CSS/JS: network first, cache fallback (updates arrive immediately when online).
    - Fonts, icons, Leaflet, artwork: cache first (they rarely change).
    Bump VERSION when you change the SHELL list. */
-const VERSION = 'aquafind-v8';
+const VERSION = 'aquafind-v9';
 const SHELL = [
   '/', '/index.html', '/offline.html', '/offline.js', '/styles.css', '/config.js', '/manifest.webmanifest',
-  '/js/core.js', '/js/maps.js', '/js/views.js', '/js/admin.js', '/js/superadmin.js', '/js/main.js', '/js/pwa.js',
+  '/js/core.js', '/js/oauth.js', '/js/maps.js', '/js/views.js', '/js/admin.js', '/js/superadmin.js', '/js/main.js', '/js/pwa.js',
   '/fonts/manrope-latin-wght-normal.woff2', '/fonts/inter-latin-wght-normal.woff2',
-  '/vendor/leaflet/leaflet.js', '/vendor/leaflet/leaflet.css',
+  '/vendor/supabase/supabase.js', '/vendor/leaflet/leaflet.js', '/vendor/leaflet/leaflet.css',
   '/vendor/leaflet/images/marker-icon.png', '/vendor/leaflet/images/marker-icon-2x.png',
   '/vendor/leaflet/images/marker-shadow.png', '/vendor/leaflet/images/layers.png', '/vendor/leaflet/images/layers-2x.png',
   '/img/contours.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png',

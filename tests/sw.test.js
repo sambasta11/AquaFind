@@ -13,7 +13,7 @@ const fire = async (t, ev) => { let p; ev.waitUntil = x => p = x; ev.respondWith
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  FAIL', m); };
 (async () => {
   store['aquafind-v1'] = { '/old': 1 };
-  await fire('install', {}); ok(Object.keys(store['aquafind-v8']).length === 30, 'install precaches all 30 shell files');
+  await fire('install', {}); ok(Object.keys(store['aquafind-v9']).length === 32, 'install precaches all 32 shell files');
   await fire('activate', {}); ok(!store['aquafind-v1'] && log.includes('claimed'), 'activate deletes old caches and claims clients');
   let called = false; handlers.fetch({ request: new Req('/api/stations'), respondWith: () => called = true }); ok(!called, '/api/* is never intercepted (no cached availability)');
   called = false; handlers.fetch({ request: new Req('/api/chat', { method: 'POST' }), respondWith: () => called = true }); ok(!called, 'POST requests are not intercepted');

@@ -1,1 +1,1 @@
-{ "name": "aquafind-tests", "private": true, "scripts": { "test:e2e": "node e2e.v8.js", "test": "node ui.test.js && node chat.test.js && node mid.test.js && node sw.test.js && node theme.test.js && node profile.test.js" }, "devDependencies": { "jsdom": "^26.0.0" } }
+{ "name": "aquafind-tests", "private": true, "scripts": { "test:e2e": "node e2e.v8.js", "test": "node ui.test.js && node chat.test.js && node mid.test.js && node sw.test.js && node theme.test.js && node profile.test.js && node oauth.test.js" }, "devDependencies": { "jsdom": "^26.0.0" } }

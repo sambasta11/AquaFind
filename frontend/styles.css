@@ -270,6 +270,7 @@ textarea{height:auto;padding:10px 12px;resize:vertical;line-height:1.5;border:1p
 
 
 
+.soc-i{flex:none}.soc .btn{gap:8px}.soc-msg{margin-top:var(--s3);min-height:0}.soc-msg:empty{display:none}.soc .btn:disabled{opacity:.6}
 .soc-m{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;font:800 12px var(--display);background:var(--ink);color:#fff}
 .srow.compact .s-upd{white-space:nowrap}
 

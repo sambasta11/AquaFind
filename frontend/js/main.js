@@ -146,7 +146,7 @@ async function enter(d, remember = true) {
   try { navigator.permissions?.query({ name: 'geolocation' }).then(p => { if (p.state === 'granted') startLive(); }).catch(() => { }); } catch { }
 }
 function signOut() {
-  stopLive(true); TOKEN = null; try { localStorage.removeItem('aqf'); } catch { }
+  stopLive(true); TOKEN = null; try { localStorage.removeItem('aqf'); } catch { } OAUTH.clear();
   Object.assign(S, { user: null, chat: [], typing: false, chatFail: null, busy: false, feed: null, mineIssues: null, myRevs: null, rv: {}, saved: [], notifs: [], sel: null }); S.ad = { history: [], wr: [], people: [], ann: [], loaded: false }; S.sa = { loaded: false, loading: false, an: null, users: [], reports: [], reviews: [], avail: null, hours: 24, uq: '', ur: 'all', rs: 'pending', vs: 'flagged' };
   closeModal(true); go('#/signin'); toast('You have been signed out');
 }
@@ -198,7 +198,7 @@ const A = {
   close: () => closeModal(),
   report() { go('#/station/' + routeId() + '/report'); },
   demo(el) { const p = el.dataset.p, c = { user: ['user@aquafind.com', 'user123'], admin: ['admin@aquafind.com', 'admin123'], super: ['super@aquafind.com', 'super123'] }[p]; $('#em').value = c[0]; $('#pw').value = c[1]; $('#pw').focus(); },
-  async soc(el) { try { toast('Connecting to ' + el.dataset.p + ' (demo sign-in)…'); await enter(await api('POST', '/auth/social', { provider: el.dataset.p })); } catch (e) { formErr('er', e.message); } },
+  soc(el) { return OAUTH.start(el.dataset.p); },
   terms(el) { const t = el.dataset.p; modal(`<div class="dlg-h"><h2>${t}</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div><p class="muted">${t === 'Privacy Policy' ? 'AquaFind stores your name, email and saved stations to show you water availability. Your password is stored securely and never shared. This is a school project demo.' : 'AquaFind shows water availability reported by station administrators and users. It may be out of date, so confirm with the station. This is a school project demo.'}</p><div class="btnrow"><button class="btn primary" data-act="close">Got it</button></div>`, t); },
   forgot() { modal(`<div class="dlg-h"><h2>Reset password</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div><p class="muted">Enter your email and we will send reset instructions. (Simulated in this demo.)</p><form id="forgotform" novalidate>${field({ id: 'fe', label: 'Email', type: 'email', ph: 'you@email.com', ac: 'email', val: val('em') })}<div class="btnrow"><button class="btn primary" type="submit">Send reset link</button><button type="button" class="btn quiet" data-act="close">Cancel</button></div></form>`, 'Reset password'); },
   qr(el) {
@@ -443,4 +443,5 @@ window.addEventListener('aqf-online', async () => {
   await bootSession();
   S.ready = true; S.anim = 'fade'; if (!S.chat.length) S.chat = [{ role: 'assistant', text: GREET, t: Date.now(), local: true }];
   if (isStaff(S.user) && !location.hash) location.hash = '#/admin'; else render();
+  OAUTH.callback();   // returning from Google / Facebook: finish the sign-in (or show why it did not finish)
 })();

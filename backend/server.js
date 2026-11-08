@@ -14,6 +14,20 @@ const DEV_SECRET = 'aquafind-dev-secret-change-me';
 const SECRET = process.env.JWT_SECRET || DEV_SECRET;
 if (PROD && (SECRET === DEV_SECRET || SECRET.length < 24)) { console.error('Refusing to start: set JWT_SECRET (at least 24 random characters) when NODE_ENV=production.'); process.exit(1); }
 
+// Google / Facebook sign-in goes through Supabase Auth. The browser talks to Supabase to sign in; this server then verifies the
+// resulting Supabase session and issues AquaFind's own session token, so every other route keeps working unchanged.
+// SUPABASE_ANON_KEY is the public "anon" / "publishable" key (safe in the browser). The service-role / secret key must NEVER be set here.
+const SB_URL = (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+const SB_KEY = (process.env.SUPABASE_ANON_KEY || '').trim();
+let SB_ORIGIN = '';
+try { if (SB_URL) SB_ORIGIN = new URL(SB_URL).origin; } catch { console.error('SUPABASE_URL is not a valid URL; Google/Facebook sign-in is disabled.'); }
+const keyRole = k => { try { return JSON.parse(Buffer.from(k.split('.')[1], 'base64url').toString()).role; } catch { return ''; } };
+if (SB_KEY && (SB_KEY.startsWith('sb_secret_') || keyRole(SB_KEY) === 'service_role')) {
+  console.error('SUPABASE_ANON_KEY holds a secret / service-role key. Refusing to expose it: use the public anon (publishable) key. Google/Facebook sign-in is disabled.');
+  SB_ORIGIN = '';
+}
+const SB_ON = !!(SB_ORIGIN && SB_KEY);
+
 // ---------- Sample data (first run only) ----------
 const SURIGAO = [
     ['s1','BlueDrop Refilling Station','Rizal St, Washington, Surigao City',9.787,125.489,'0917 123 4567',6,20,'available',5],
@@ -79,7 +93,7 @@ async function initDatabase() {
 const STATUS = ['available', 'low', 'out', 'closed'];
 const LABEL = { available: 'Available', low: 'Low Supply', out: 'Out of Water', closed: 'Closed' };
 const EMAIL = /^\S+@\S+\.\S+$/;
-const userOut = u => ({ id: u.user_id, name: u.full_name, email: u.email, phone: u.phone, role: u.role, station: u.station_id, alerts: !!u.alerts_on, nearby: !!u.nearby_on, avatar: u.avatar || null, since: u.created_at, active: u.active !== 0 });
+const userOut = u => ({ id: u.user_id, name: u.full_name, email: u.email, phone: u.phone, role: u.role, station: u.station_id, alerts: !!u.alerts_on, nearby: !!u.nearby_on, avatar: u.avatar || null, pw: !!u.password_hash, since: u.created_at, active: u.active !== 0 });
 const token = u => jwt.sign({ id: u.user_id }, SECRET, { expiresIn: '7d' });
 const WR_WINDOW = 3 * 3600000; // community reports count for 3 hours
 const ah = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);   // Express 4 does not catch rejected promises by itself
@@ -134,7 +148,7 @@ app.use((req, res, next) => {
     'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'geolocation=(self), camera=(), microphone=()',
     'Content-Security-Policy': ["default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
-      "font-src 'self'", "connect-src 'self' https://routing.openstreetmap.de", "manifest-src 'self'", "worker-src 'self'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'"].join('; ')
+      "font-src 'self'", "connect-src 'self' https://routing.openstreetmap.de" + (SB_ORIGIN ? ' ' + SB_ORIGIN : ''), "manifest-src 'self'", "worker-src 'self'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'"].join('; ')
   });
   if (PROD) res.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   next();
@@ -193,19 +207,86 @@ app.post('/api/auth/login', ah(async (req, res) => {
   if (!EMAIL.test(e)) return res.status(400).json({ error: 'Enter a valid email address.' });
   if (p.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   const u = await get('SELECT * FROM users WHERE email=?', e);
+  if (u && !u.password_hash) return res.status(401).json({ error: 'This account signs in with Google or Facebook. Use that button instead.' });
   if (!u || !bcrypt.compareSync(p, u.password_hash)) return res.status(401).json({ error: 'Email or password is incorrect.' });
   if (u.active === 0) return res.status(403).json({ error: 'This account has been deactivated. Contact an administrator.' });
   res.json({ token: token(u), user: userOut(u) });
 }));
-// Simulated Google/Facebook login (swap for real OAuth later)
-app.post('/api/auth/social', ah(async (req, res) => {
-  if (PROD && process.env.ALLOW_SIMULATED_SOCIAL !== '1') return res.status(403).json({ error: 'Social sign-in is not enabled. Use your email and password.' });
-  const p = req.body.provider === 'Facebook' ? 'Facebook' : 'Google';
-  const e = p.toLowerCase() + '.user@mail.com';
-  let u = await get('SELECT * FROM users WHERE email=?', e);
+// ---- Google / Facebook sign-in (real OAuth through Supabase Auth) ----
+// Which providers are switched on in the Supabase project (public endpoint, cached for a minute). null = could not find out.
+let sbCache = { t: 0, v: null };
+async function sbProviders() {
+  if (sbCache.v && Date.now() - sbCache.t < 60000) return sbCache.v;
+  try {
+    const r = await fetch(SB_ORIGIN + '/auth/v1/settings', { headers: { apikey: SB_KEY }, signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error('status ' + r.status);
+    const d = await r.json(); sbCache = { t: Date.now(), v: { google: !!d.external?.google, facebook: !!d.external?.facebook } };
+  } catch (e) { console.error('Could not read Supabase Auth settings:', e.message); return sbCache.v; }
+  return sbCache.v;
+}
+app.get('/api/auth/config', ah(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!SB_ON) return res.json({ enabled: false });
+  res.json({ enabled: true, url: SB_ORIGIN, anonKey: SB_KEY, providers: await sbProviders() });
+}));
+const sbUser = async at => {   // the same check supabase.auth.getUser(token) does: Supabase itself validates the token
+  const r = await fetch(SB_ORIGIN + '/auth/v1/user', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + at }, signal: AbortSignal.timeout(8000) });
+  if (r.status === 401 || r.status === 403) return null;
+  if (!r.ok) throw new Error('Supabase Auth answered ' + r.status);
+  return r.json();
+};
+// Copies the provider's profile picture into our own avatars table (best effort, https + known hosts only, same size and type checks as uploads).
+const PHOTO_HOST = /(^|\.)(googleusercontent\.com|fbsbx\.com|fbcdn\.net)$|^graph\.facebook\.com$/;
+async function importPhoto(userId, url) {
+  try {
+    let u = new URL(url);
+    for (let hop = 0; hop < 4; hop++) {
+      if (u.protocol !== 'https:' || !PHOTO_HOST.test(u.hostname)) return;
+      const r = await fetch(u, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
+      if (r.status >= 300 && r.status < 400 && r.headers.get('location')) { u = new URL(r.headers.get('location'), u); continue; }
+      if (!r.ok) return;
+      const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > AV_MAX) return;
+      const ext = avType(buf); if (!ext) return;
+      const file = `${userId}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+      await tx(async q => { await q('INSERT INTO avatars (file,user_id,mime,data) VALUES (?,?,?,?)', file, userId, AV_MIME[ext], buf); await q('UPDATE users SET avatar=? WHERE user_id=? AND avatar IS NULL', file, userId); });
+      return;
+    }
+  } catch { /* a missing photo never blocks sign-in */ }
+}
+app.post('/api/auth/oauth', ah(async (req, res) => {
+  if (!SB_ON) return res.status(503).json({ error: 'Google and Facebook sign-in are not set up on this server yet. Use your email and password.' });
+  const at = typeof req.body.access_token === 'string' ? req.body.access_token : '';
+  if (at.length < 20 || at.length > 6000) return res.status(400).json({ error: 'Sign-in could not be completed. Please try again.' });
+  let su;
+  try { su = await sbUser(at); } catch (e) { console.error('OAuth verify failed:', e.message); return res.status(502).json({ error: 'Could not reach the sign-in service. Please try again in a moment.' }); }
+  if (!su || !su.id) return res.status(401).json({ error: 'Your sign-in expired before it finished. Please try again.' });
+  const ids = (su.identities || []).filter(i => i.provider === 'google' || i.provider === 'facebook')
+    .sort((a, b) => Date.parse(b.last_sign_in_at || 0) - Date.parse(a.last_sign_in_at || 0));
+  if (!ids.length) return res.status(403).json({ error: 'Only Google and Facebook sign-in are supported here.' });
+  const idn = ids[0], prov = idn.provider === 'facebook' ? 'Facebook' : 'Google', meta = { ...(idn.identity_data || {}), ...(su.user_metadata || {}) };
+  const sid = String(su.id);
+  // Returning user: found by the Supabase user id, never by e-mail address.
+  let u = await get('SELECT u.* FROM oauth_identities o JOIN users u ON u.user_id = o.user_id WHERE o.supabase_user_id=?', sid);
   if (!u) {
-    try { u = (await run('INSERT INTO users (full_name,email,password_hash,created_at) VALUES (?,?,?,?) RETURNING *', p + ' User', e, bcrypt.hashSync(Math.random().toString(36), 10), Date.now())).rows[0]; }
-    catch (err) { if (!isDup(err)) throw err; u = await get('SELECT * FROM users WHERE email=?', e); }
+    const email = String(su.email || idn.identity_data?.email || '').trim().toLowerCase();
+    if (!EMAIL.test(email)) return res.status(400).json({ error: `${prov} did not share an email address with AquaFind. Allow email access for AquaFind in your ${prov} settings and try again, or register with email.` });
+    if (idn.identity_data?.email_verified === false) return res.status(403).json({ error: `Your ${prov} email address is not verified, so it cannot be used to sign in.` });
+    if (await get('SELECT 1 AS x FROM users WHERE email=?', email))
+      return res.status(409).json({ error: `An AquaFind account with ${email} already exists. Sign in with your email and password instead. ${prov} is not linked to it automatically.` });
+    const name = String(meta.full_name || meta.name || email.split('@')[0]).replace(/\s+/g, ' ').trim().slice(0, 80);
+    try {
+      u = await tx(async q => {
+        const row = (await q('INSERT INTO users (full_name,email,password_hash,created_at) VALUES (?,?,NULL,?) RETURNING *', name.length >= 2 ? name : email.split('@')[0].padEnd(2, '_'), email, Date.now())).rows[0];
+        await q('INSERT INTO oauth_identities (supabase_user_id,user_id,provider,created_at) VALUES (?,?,?,?)', sid, row.user_id, idn.provider, Date.now());
+        return row;
+      });
+    } catch (err) {
+      if (!isDup(err)) throw err;   // two requests raced: whoever lost just signs in as the account the winner created
+      u = await get('SELECT u.* FROM oauth_identities o JOIN users u ON u.user_id = o.user_id WHERE o.supabase_user_id=?', sid);
+      if (!u) return res.status(409).json({ error: 'An AquaFind account with this email already exists. Sign in with your email and password instead.' });
+    }
+    const pic = meta.avatar_url || meta.picture;
+    if (pic && u) { await importPhoto(u.user_id, String(pic)); u = await userById(u.user_id); }
   }
   if (u.active === 0) return res.status(403).json({ error: 'This account has been deactivated. Contact an administrator.' });
   res.json({ token: token(u), user: userOut(u) });
@@ -236,6 +317,7 @@ app.put('/api/me', auth, ah(async (req, res) => {
 }));
 app.put('/api/me/password', auth, ah(async (req, res) => {
   const { current = '', next = '' } = req.body;
+  if (!req.user.password_hash) return res.status(400).json({ error: 'This account signs in with Google or Facebook, so it has no AquaFind password.' });
   if (!bcrypt.compareSync(current, req.user.password_hash)) return res.status(400).json({ error: 'Current password is incorrect.' });
   if (next.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters.' });
   await run('UPDATE users SET password_hash=? WHERE user_id=?', bcrypt.hashSync(next, 10), req.user.user_id);
