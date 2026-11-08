@@ -1095,8 +1095,37 @@ a.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
 .role-tabs .role-pill{position:absolute;z-index:0;top:5px;bottom:5px;left:5px;width:calc(50% - 5px);border-radius:12px;background:#fff;box-shadow:0 4px 12px -2px rgba(11,34,57,.18),0 0 0 1px rgba(11,34,57,.04);transition:transform .35s cubic-bezier(.3,.8,.3,1)}
 .role-wrap[data-role=admin] .role-pill{transform:translateX(100%)}
 .role-tabs button:focus-visible{outline:2px solid #2196F3;outline-offset:2px}
-.role-wrap .demo [data-p=super]{display:none}
-.role-wrap[data-role=admin] .demo [data-p=user],.role-wrap[data-role=user] .demo [data-p=admin]{display:none}
-.role-wrap[data-role=admin] .or,.role-wrap[data-role=admin] .soc,.role-wrap[data-role=admin] .soc-msg,.role-wrap[data-role=admin] .auth-alt{display:none}
-.role-wrap[data-role=admin] .demo{margin-top:26px}
+/* Admin tab keeps the exact same layout (no jump, no scroll): social sign-in just fades out in place */
+.role-wrap .or,.role-wrap .soc,.role-wrap .auth-alt{transition:opacity .3s ease,transform .3s ease}
+.role-wrap[data-role=admin] .or,.role-wrap[data-role=admin] .soc,.role-wrap[data-role=admin] .auth-alt{opacity:0;transform:translateY(6px);visibility:hidden;pointer-events:none;transition:opacity .3s ease,transform .3s ease,visibility 0s .3s}
+.role-wrap .auth-sub{min-height:3.1em}
+.role-wrap .demo{flex-wrap:wrap}
 @media(prefers-reduced-motion:reduce){.role-tabs .role-pill,.role-tabs button{transition:none}}
+
+/* Compact sign-in on short desktop windows so everything fits without scrolling */
+@media(min-width:900px) and (max-height:820px){
+  .is-auth .auth-in{padding-top:24px;padding-bottom:20px}
+  .is-auth .auth-in h1{font-size:30px}
+  .is-auth .auth-in .auth-sub{margin-top:6px;font-size:14px}
+  .role-wrap .auth-sub{min-height:2.9em}
+  .role-tabs{margin-top:16px}.role-tabs button{height:40px}
+  .is-auth .auth-in .field{margin-top:14px}
+  .is-auth .auth-in .field>label{margin-bottom:6px}
+  .is-auth .auth-in .input input{height:46px}.is-auth .auth-in .eye{top:4px;right:5px}
+  .is-auth .auth-in .auth-row{margin-top:14px}
+  .is-auth .auth-in form .btn.block{height:48px;margin-top:16px}
+  .is-auth .auth-in .or{margin:18px 0 12px}
+  .is-auth .auth-in .soc .btn{height:44px}
+  .is-auth .auth-in .auth-alt{margin-top:16px}
+  .is-auth .auth-in .demo{margin-top:14px}
+}
+@media(min-width:900px) and (max-height:680px){
+  .is-auth .auth-in{padding-top:14px;padding-bottom:10px}
+  .is-auth .auth-in h1{font-size:26px}
+  .is-auth .auth-in .field{margin-top:10px}
+  .is-auth .auth-in .input input{height:42px}.is-auth .auth-in .eye{top:2px}
+  .is-auth .auth-in .or{margin:12px 0 8px}
+  .is-auth .auth-in .auth-alt{margin-top:10px}
+  .is-auth .auth-in .demo{margin-top:8px}
+  .is-auth .auth-foot{padding-bottom:10px}
+}
