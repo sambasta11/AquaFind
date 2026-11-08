@@ -20,13 +20,10 @@ function go(h) { if (location.hash === h || (h === '#/' && !location.hash)) { S.
 /* ---------- Shell ---------- */
 const NAV = [['home', 'Home', '#/', 'home'], ['map', 'Explore', '#/map', 'map'], ['stations', 'Stations', '#/stations', 'list'], ['reports', 'Community', '#/reports', 'users'], ['saved', 'Saved', '#/saved', 'heart']];
 const navKey = n => ({ detail: 'stations', directions: 'stations', report: 'stations' }[n] || n);
-/* Download button in the header: Android/desktop get the APK, iPhone gets the "Add to Home Screen" steps, installed app shows nothing */
+/* Download button in the header: shown only in a browser on an Android phone/tablet (not on desktop web, iPhone, or inside the installed app) */
 function dlBtn() {
-  const st = PWA.state();
-  if (window.Capacitor || st === 'installed') return '';
-  return st === 'ios'
-    ? `<button type="button" class="icon-btn dl-btn" data-act="ios-help" aria-label="Install AquaFind on iPhone" title="Install on iPhone">${ico('download', 19)}</button>`
-    : `<a class="icon-btn dl-btn" href="/downloads/AquaFind.apk" download="AquaFind.apk" aria-label="Download the Android app" title="Download the Android app">${ico('download', 19)}</a>`;
+  if (window.Capacitor || !/Android/i.test(navigator.userAgent) || matchMedia('(display-mode: standalone)').matches || PWA.state() === 'installed') return '';
+  return `<a class="icon-btn dl-btn" href="/downloads/AquaFind.apk" download="AquaFind.apk" aria-label="Download the Android app" title="Download the Android app">${ico('download', 19)}</a>`;
 }
 function mast(r) {
   const n = unread(), k = navKey(r.name), u = S.user;
