@@ -1717,8 +1717,8 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 .auth-in,.auth-foot{background:var(--panel)}
 @media(min-width:900px){
   .is-auth .auth{position:relative;overflow:hidden;background:var(--panel)}
-  .is-auth .auth::before{content:"";position:absolute;z-index:0;top:0;right:0;width:48%;height:150px;pointer-events:none;background:var(--aq-wave-a) repeat-x 0 0/900px 150px;animation:aqSlideA 24s linear infinite}
-  .is-auth .auth::after{content:"";position:absolute;z-index:0;top:0;right:0;width:48%;height:150px;pointer-events:none;background:var(--aq-wave-b) repeat-x 0 0/600px 150px;animation:aqSlideB 15s linear infinite}
+  .is-auth .auth::before{content:"";position:absolute;z-index:0;top:0;left:51.2195%;right:0;height:150px;pointer-events:none;background:var(--aq-wave-a) repeat-x 0 0/900px 150px;animation:aqSlideA 24s linear infinite}
+  .is-auth .auth::after{content:"";position:absolute;z-index:0;top:0;left:51.2195%;right:0;height:150px;pointer-events:none;background:var(--aq-wave-b) repeat-x 0 0/600px 150px;animation:aqSlideB 15s linear infinite}
   .is-auth .auth-in,.is-auth .auth-foot{background:transparent;position:relative;z-index:1}
 }
 @keyframes aqSlideA{to{background-position-x:-900px}}
