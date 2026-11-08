@@ -147,7 +147,7 @@ app.use((req, res, next) => {
   res.set({
     'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'geolocation=(self), camera=(), microphone=()',
-    'Content-Security-Policy': ["default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
+    'Content-Security-Policy': ["default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org",
       "font-src 'self'", "connect-src 'self' https://routing.openstreetmap.de" + (SB_ORIGIN ? ' ' + SB_ORIGIN : ''), "manifest-src 'self'", "worker-src 'self'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'"].join('; ')
   });
   if (PROD) res.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
