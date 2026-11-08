@@ -450,3 +450,28 @@ window.addEventListener('aqf-online', async () => {
   if (isStaff(S.user) && !location.hash) location.hash = '#/admin'; else render();
   OAUTH.callback();   // returning from Google / Facebook: finish the sign-in (or show why it did not finish)
 })();
+
+// Sign-in panel: cursor-reactive spotlight, ring and logo parallax (desktop pointers only; purely decorative)
+(() => {
+  if (!matchMedia('(hover:hover) and (pointer:fine)').matches || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  let tx = 0.5, ty = 0.5, x = 0.5, y = 0.5, raf = 0, hero = null;
+  const tick = () => {
+    raf = 0;
+    if (!hero || !hero.isConnected) return;
+    x += (tx - x) * 0.09; y += (ty - y) * 0.09;
+    hero.style.setProperty('--px', (x * 100).toFixed(2) + '%');
+    hero.style.setProperty('--py', (y * 100).toFixed(2) + '%');
+    hero.style.setProperty('--dx', ((x - 0.5) * 2).toFixed(3));
+    hero.style.setProperty('--dy', ((y - 0.5) * 2).toFixed(3));
+    if (Math.abs(tx - x) > 0.001 || Math.abs(ty - y) > 0.001) raf = requestAnimationFrame(tick);
+  };
+  document.addEventListener('pointermove', (e) => {
+    hero = document.querySelector('.is-auth .auth-hero');
+    if (!hero) return;
+    const r = hero.getBoundingClientRect();
+    tx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    ty = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    hero.classList.toggle('is-hover', e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
+    if (!raf) raf = requestAnimationFrame(tick);
+  }, { passive: true });
+})();
