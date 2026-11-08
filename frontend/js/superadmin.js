@@ -101,27 +101,66 @@ SAC.sstat = async t => {
   catch (e) { t.value = was; t.disabled = false; fail(e); }
 };
 
-/* ---------- Availability monitor ---------- */
-SV.availability = () => {
-  const a = S.sa.avail, st = S.sa.an.stations, items = a.items, tot = items.length || 1, stale = items.filter(x => x.stale).length;
-  const avgAge = items.length ? items.reduce((n, x) => n + (Date.now() - x.upd), 0) / items.length : 0;
-  return `${aHead('Availability monitor', 'Latest status of every station, and which ones have not been updated recently.', `<div class="select sm"><label class="sr" for="hrs">Outdated after</label><select id="hrs" data-sa="hours">${[[6, '6 hours'], [12, '12 hours'], [24, '24 hours'], [72, '3 days'], [168, '7 days']].map(o => `<option value="${o[0]}" ${a.hours === o[0] ? 'selected' : ''}>Outdated after ${o[1]}</option>`).join('')}</select>${ico('chevd', 14)}</div>`)}
-  <dl class="kpis small">${kpi('Stations monitored', items.length)}${kpi('Outdated', stale, `no update in ${a.hours >= 24 ? a.hours / 24 + ' d' : a.hours + ' h'}`, stale ? 'k-alert' : 'k-aqua')}${kpi('Average age of status', items.length ? dur(avgAge) : '–', 'across all stations')}${kpi('Changes, last 7 days', items.reduce((n, x) => n + x.changes7d, 0), 'status updates')}</dl>
-  ${sec('Statistics', `<div class="stat-rows">${SKEYS.map(k => `<div class="stat-row"><span class="st st-${k}">${gauge(k, 16)}<span>${SM[k].label}</span></span><i class="stat-bar"><i class="seg-${k}" style="width:${pct(st[k], tot)}%"></i></i><b class="num">${st[k]}</b><span class="muted num">${pct(st[k], tot)}%</span></div>`).join('')}</div>`)}
-  ${tbl(['Station', 'Status', 'Last update', 'Changes (7 d)', 'Community (3 h)', 'Freshness', 'Set status'], items.map(x => [`<b>${esc(x.name)}</b><br><span class="muted">${esc(x.addr)}</span>`, `<span class="st st-${x.status}">${gauge(x.status, 14)}<span>${SM[x.status].label}</span></span>`, `${dateTime(x.upd)}<br><span class="muted">${ago(x.upd)}</span>`, `<span class="num">${x.changes7d}</span>`, `<span class="num">${x.yes} water / ${x.no} none</span>`, x.stale ? `<span class="tag rs-rejected">${ico('alert', 12)} Outdated</span>` : '<span class="tag ok">Fresh</span>', statSelect(get(x.id) || { id: x.id, name: x.name, status: x.status })]), 'No stations.')}`;
+/* ---------- Shared helpers: Availability + Reports (arrival animation, donut, KPI) ---------- */
+let SA_LAST = '';
+const saFresh = k => { const f = SA_LAST !== k; SA_LAST = k; return f; };   // animate a page only when you arrive on it, not on every refresh
+addEventListener('hashchange', () => { SA_LAST = ''; Object.keys(CU).forEach(k => k.startsWith('sa-') && delete CU[k]); });
+const skpi = (label, val, key, sub, cls = '', attrs = '') => `<${attrs ? 'button type="button"' : 'div'} class="kpi ${cls}" ${attrs}><dt>${label}</dt><dd class="num"${typeof val === 'number' ? ` data-count="${val}" data-key="${key}"` : ''}>${val}</dd>${sub ? `<small>${sub}</small>` : ''}</${attrs ? 'button' : 'div'}>`;
+const donut = (segs, big, small, key) => {
+  const live = segs.filter(s => s.v), tot = live.reduce((n, s) => n + s.v, 0) || 1; let off = 0;
+  const arcs = live.map((s, i) => { const p = s.v / tot * 100, len = Math.max(p - (live.length > 1 ? 1.6 : 0), .6);
+    const c = `<circle class="dn-seg ${s.c}" cx="21" cy="21" r="15.9155" pathLength="100" style="stroke-dasharray:${len.toFixed(2)} ${(100 - len).toFixed(2)};stroke-dashoffset:${(-off).toFixed(2)};--i:${i}"/>`; off += p; return c; }).join('');
+  return `<div class="dn" role="img" aria-label="${segs.map(s => s.v + ' ' + s.l).join(', ')}"><svg viewBox="0 0 42 42" aria-hidden="true"><circle class="dn-bg" cx="21" cy="21" r="15.9155"/>${arcs}</svg><div class="dn-c"><b class="num"><span data-count="${big}" data-key="${key}">${big}</span>%</b><span>${small}</span></div></div>`;
 };
+
+/* ---------- Availability monitor ---------- */
+const AV_F = [['all', 'All'], ['available', 'Available'], ['low', 'Low supply'], ['out', 'Out of water'], ['closed', 'Closed'], ['stale', 'Outdated']];
+const avList = () => { const f = S.sa.af || 'all', q = (S.sa.aq || '').trim().toLowerCase();
+  return S.sa.avail.items.filter(x => (f === 'all' || (f === 'stale' ? x.stale : x.status === f)) && (!q || (x.name + ' ' + x.addr).toLowerCase().includes(q))); };
+const avTable = l => { const lim = S.sa.avail.hours * 3600000;
+  return tbl(['Station', 'Status', 'Last update', 'Changes (7 d)', 'Community (3 h)', 'Freshness', 'Set status'], l.map(x => { const r = (Date.now() - x.upd) / lim, lv = r >= 1 ? 'bad' : r >= .5 ? 'warn' : 'good';
+    return [`<b>${esc(x.name)}</b><br><span class="muted">${esc(x.addr)}</span>`, `<span class="st st-${x.status}">${gauge(x.status, 14)}<span>${SM[x.status].label}</span></span>`, `${dateTime(x.upd)}<br><span class="muted">${ago(x.upd)}</span>`,
+      `<span class="chg num" title="${x.changes7d} status updates in the last 7 days"><i style="--w:${Math.min(48, x.changes7d * 6)}px"></i>${x.changes7d}</span>`, `<span class="num"><span class="cm-y">${x.yes} water</span> / <span class="cm-n">${x.no} none</span></span>`,
+      `<span class="fresh f-${lv}" title="${ago(x.upd)}"><i style="--w:${Math.max(7, Math.min(100, r * 100)).toFixed(0)}%"></i></span><small class="fresh-t f-${lv}">${x.stale ? 'Outdated' : 'Fresh'} · ${ago(x.upd)}</small>`, statSelect(get(x.id) || { id: x.id, name: x.name, status: x.status })]; }), 'No stations match this view.'); };
+const avFilter = () => { const l = avList(); $('#atbl').innerHTML = avTable(l); $('#acount').textContent = `${l.length} of ${S.sa.avail.items.length} stations`; };
+SV.availability = () => {
+  const fx = saFresh('availability'), a = S.sa.avail, items = a.items, tot = items.length || 1, stale = items.filter(x => x.stale).length, f = S.sa.af || 'all';
+  const n = k => items.filter(x => x.status === k).length, cnt = k => k === 'all' ? items.length : k === 'stale' ? stale : n(k);
+  const avgAge = items.length ? items.reduce((s, x) => s + (Date.now() - x.upd), 0) / items.length : 0, chg = items.reduce((s, x) => s + x.changes7d, 0), ok = pct(n('available'), tot);
+  return `<div class="sa sa-av${fx ? ' sa-fx' : ''}">${aHead('Availability monitor', 'Latest status of every station, and which ones have not been updated recently.', `<div class="select sm"><label class="sr" for="hrs">Outdated after</label><select id="hrs" data-sa="hours">${[[6, '6 hours'], [12, '12 hours'], [24, '24 hours'], [72, '3 days'], [168, '7 days']].map(o => `<option value="${o[0]}" ${a.hours === o[0] ? 'selected' : ''}>Outdated after ${o[1]}</option>`).join('')}</select>${ico('chevd', 14)}</div>`)}
+  <dl class="kpis small">${skpi('Stations monitored', items.length, 'sa-av-n', 'in the network', 'k-aqua')}${skpi(`Outdated${stale ? '<i class="sa-ping" aria-hidden="true"></i>' : ''}`, stale, 'sa-av-s', `no update in ${a.hours >= 24 ? a.hours / 24 + ' d' : a.hours + ' h'}`, stale ? 'k-alert' : 'k-ok')}${skpi('Average age of status', items.length ? dur(avgAge) : '–', 'sa-av-a', 'across all stations', 'k-low')}${skpi('Changes, last 7 days', chg, 'sa-av-c', 'status updates', 'k-aqua')}</dl>
+  ${sec('Supply overview', `<div class="sa-ov">${donut(SKEYS.map(k => ({ c: 'dn-' + k, v: n(k), l: SM[k].label.toLowerCase() })), ok, 'available', 'sa-av-p')}<div class="stat-rows">${SKEYS.map((k, i) => `<div class="stat-row"><span class="st st-${k}">${gauge(k, 16)}<span>${SM[k].label}</span></span><i class="stat-bar"><i class="seg-${k} sa-grow" style="width:${pct(n(k), tot)}%;--i:${i}"></i></i><b class="num">${n(k)}</b><span class="muted num">${pct(n(k), tot)}%</span></div>`).join('')}</div></div>`)}
+  <div class="toolbar sa-bar"><div class="search">${ico('search', 18)}<label class="sr" for="aq">Search stations</label><input id="aq" data-sa="aq" type="search" value="${esc(S.sa.aq || '')}" placeholder="Search station or address" autocomplete="off"></div></div>
+  <div class="sa-chips" role="group" aria-label="Filter stations">${AV_F.map(c => `<button type="button" class="sa-chip c-${c[0]} ${f === c[0] ? 'on' : ''}" aria-pressed="${f === c[0]}" data-act="avf" data-p="${c[0]}">${c[1]} <b class="num">${cnt(c[0])}</b></button>`).join('')}</div>
+  <p class="count" id="acount" aria-live="polite">${avList().length} of ${items.length} stations</p><div id="atbl">${avTable(avList())}</div></div>`;
+};
+SAA.avf = el => { S.sa.af = el.dataset.p; $$('.sa-chip').forEach(b => { const on = b.dataset.p === S.sa.af; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); avFilter(); };
+SAI.aq = t => { S.sa.aq = t.value; avFilter(); };
 SAC.hours = async t => { S.sa.hours = +t.value; try { await saReload(['an', 'avail']); renderKeep(); } catch (e) { fail(e); } };
 
 /* ---------- Reports ---------- */
 const RSTATS = [['pending', 'Pending'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['resolved', 'Resolved'], ['all', 'All']];
+const RCOL = { pending: 'dn-low', approved: 'dn-aqua', rejected: 'dn-out', resolved: 'dn-available' };
+const rList = () => { const f = S.sa.rs, q = (S.sa.rq || '').trim().toLowerCase();
+  return S.sa.reports.filter(r => (f === 'all' || r.status === f) && (!q || [r.station, r.by, r.type, r.note, r.adminNote].join(' ').toLowerCase().includes(q))); };
+const rTable = l => tbl(['Reported', 'Station', 'By', 'Issue', 'Details', 'Status', ''], l.map(r => { const late = r.status === 'pending' && Date.now() - r.t > 864e5;
+  return [`${dateTime(r.t)}<br><span class="wait ${late ? 'late' : ''}">${r.status === 'pending' ? 'Waiting ' + dur(Date.now() - r.t) : ago(r.t)}</span>`, `<a href="#/station/${r.sid}">${esc(r.station)}</a>`, esc(r.by), `<span class="iss-t">${esc(r.type)}</span>`, esc(r.note || '—') + (r.adminNote ? `<br><span class="muted">Note: ${esc(r.adminNote)}</span>` : ''), rtag(r.status),
+    `<span class="btnline">${r.status === 'pending' ? `<button class="btn sm outline" data-act="rstat" data-id="${r.id}" data-p="approved">Approve</button><button class="btn sm quiet danger" data-act="rstat" data-id="${r.id}" data-p="rejected">Reject</button>` : ''}<button class="btn sm quiet" data-act="srev" data-id="${r.id}">Update</button></span>`]; }), S.sa.rq ? 'No reports match your search.' : 'No reports in this view.');
+const rFilter = () => { const l = rList(); $('#rtbl').innerHTML = rTable(l); $('#rcount').textContent = `${l.length} of ${S.sa.reports.length} reports`; };
 SV.reports = () => {
-  const L = S.sa.reports, f = S.sa.rs, l = L.filter(r => f === 'all' || r.status === f), cnt = k => k === 'all' ? L.length : L.filter(r => r.status === k).length;
-  return `${aHead('Report management', 'Review corrections from users. Approve valid reports, reject the rest, and mark them resolved once fixed.')}
+  const fx = saFresh('reports'), L = S.sa.reports, f = S.sa.rs, cnt = k => k === 'all' ? L.length : L.filter(r => r.status === k).length, tot = L.length, pend = L.filter(r => r.status === 'pending'), done = tot - pend.length;
+  const oldest = pend.length ? dur(Date.now() - Math.min(...pend.map(r => r.t))) : '', stations = new Set(L.map(r => r.sid)).size, rate = pct(done, tot);
+  const by = {}; L.forEach(r => by[r.type] = (by[r.type] || 0) + 1); const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 5), mx = top.length ? top[0][1] : 1;
+  return `<div class="sa sa-rp${fx ? ' sa-fx' : ''}">${aHead('Report management', 'Review corrections from users. Approve valid reports, reject the rest, and mark them resolved once fixed.')}
+  <dl class="kpis small">${skpi('Total reports', tot, 'sa-rp-t', 'from all stations', 'k-aqua')}${skpi(`Pending${pend.length ? '<i class="sa-ping" aria-hidden="true"></i>' : ''}`, pend.length, 'sa-rp-p', pend.length ? `oldest waiting ${oldest}` : 'all caught up', pend.length ? 'k-alert' : 'k-ok', 'data-act="sars" data-p="pending"')}${skpi('Reviewed', done, 'sa-rp-d', `${rate}% of all reports`, 'k-ok', 'data-act="sars" data-p="all"')}${skpi('Stations affected', stations, 'sa-rp-s', 'with at least one report', 'k-low')}</dl>
+  <div class="sa-two">${sec('Report status', `<div class="sa-ov">${donut(RSTATS.slice(0, 4).map(c => ({ c: RCOL[c[0]], v: cnt(c[0]), l: c[1].toLowerCase() })), rate, 'reviewed', 'sa-rp-r')}<ul class="dn-leg">${RSTATS.slice(0, 4).map((c, i) => `<li style="--i:${i}"><button type="button" data-act="sars" data-p="${c[0]}"><i class="${RCOL[c[0]]}"></i><span>${c[1]}</span><b class="num">${cnt(c[0])}</b></button></li>`).join('')}</ul></div>`)}
+  ${sec('Most reported issues', top.length ? `<ul class="iss-bars">${top.map(([t, c], i) => `<li style="--i:${i}"><span class="iss-n" title="${esc(t)}">${esc(t)}</span><i class="iss-bar"><i class="sa-grow" style="width:${Math.max(6, c / mx * 100)}%"></i></i><b class="num">${c}</b></li>`).join('')}</ul>` : '<p class="muted pad">No reports yet.</p>')}</div>
+  <div class="toolbar sa-bar"><div class="search">${ico('search', 18)}<label class="sr" for="rq">Search reports</label><input id="rq" data-sa="rq" type="search" value="${esc(S.sa.rq || '')}" placeholder="Search station, reporter or issue" autocomplete="off"></div></div>
   <div class="tabs" role="tablist" aria-label="Filter reports">${RSTATS.map(c => `<button role="tab" class="tab ${f === c[0] ? 'on' : ''}" aria-selected="${f === c[0]}" data-act="sars" data-p="${c[0]}">${c[1]} <span class="num">${cnt(c[0])}</span></button>`).join('')}</div>
-  ${tbl(['Reported', 'Station', 'By', 'Issue', 'Details', 'Status', ''], l.map(r => [`${dateTime(r.t)}`, `<a href="#/station/${r.sid}">${esc(r.station)}</a>`, esc(r.by), esc(r.type), esc(r.note || '—') + (r.adminNote ? `<br><span class="muted">Note: ${esc(r.adminNote)}</span>` : ''), rtag(r.status),
-    `<span class="btnline">${r.status === 'pending' ? `<button class="btn sm outline" data-act="rstat" data-id="${r.id}" data-p="approved">Approve</button><button class="btn sm quiet danger" data-act="rstat" data-id="${r.id}" data-p="rejected">Reject</button>` : ''}<button class="btn sm quiet" data-act="srev" data-id="${r.id}">Update</button></span>`]), 'No reports in this view.')}`;
+  <p class="count" id="rcount" aria-live="polite">${rList().length} of ${tot} reports</p><div id="rtbl">${rTable(rList())}</div></div>`;
 };
-SAA.sars = el => { S.sa.rs = el.dataset.p; render(); };
+SAA.sars = el => { S.sa.rs = el.dataset.p; $$('.tabs .tab').forEach(b => { const on = b.dataset.p === S.sa.rs; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }); rFilter(); };
+SAI.rq = t => { S.sa.rq = t.value; rFilter(); };
 SAA.srev = el => {
   const r = S.sa.reports.find(x => x.id == el.dataset.id); if (!r) return;
   modal(`<div class="dlg-h"><h2>Update report</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div>
