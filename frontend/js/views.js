@@ -225,7 +225,7 @@ const notFound = () => `<div class="page narrow">${empty('Page not found', 'This
 
 /* ---------- Authentication ---------- */
 const socials = () => OAUTH.html();
-const authShell = (body) => `<main class="auth"><div class="auth-hero" aria-hidden="true"><span class="auth-logo">${logo(44, { light: true })}</span><b>AquaFind</b><span>Find water refills near you, live.</span><i class="wave"></i></div><div class="auth-in">${body}</div><p class="auth-foot">Surigao City · water refill stations</p></main>`;
+const authShell = (body) => `<main class="auth"><div class="auth-hero" aria-hidden="true"><span class="auth-logo">${logo(44, { light: true })}</span><b>AquaFind</b><span>Find water refills near you, live.</span><i class="wave"></i></div><div class="auth-in">${body}</div><p class="auth-foot">Surigao City · water refill stations<br><a class="apk-dl" href="/downloads/AquaFind.apk" download="AquaFind.apk">Download the Android app (APK)</a></p></main>`;
 V.signin = () => authShell(`<h1>Sign in</h1><p class="auth-sub">See which refill stations have water before you leave home.</p>
   <form id="signin" novalidate>${field({ id: 'em', label: 'Email', type: 'email', ph: 'you@email.com', ac: 'email' })}${field({ id: 'pw', label: 'Password', type: 'password', ac: 'current-password', eye: true })}
   <div class="auth-row"><label class="check"><input type="checkbox" id="rm" checked><span>Keep me signed in</span></label><button type="button" class="link" data-act="forgot">Forgot password?</button></div>

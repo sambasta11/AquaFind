@@ -3,7 +3,7 @@
    - HTML/CSS/JS: network first, cache fallback (updates arrive immediately when online).
    - Fonts, icons, Leaflet, artwork: cache first (they rarely change).
    Bump VERSION when you change the SHELL list. */
-const VERSION = 'aquafind-v10';
+const VERSION = 'aquafind-v11';
 const SHELL = [
   '/', '/index.html', '/offline.html', '/offline.js', '/styles.css', '/config.js', '/manifest.webmanifest',
   '/js/core.js', '/js/oauth.js', '/js/maps.js', '/js/views.js', '/js/admin.js', '/js/superadmin.js', '/js/main.js', '/js/pwa.js',
@@ -29,7 +29,7 @@ self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skip
 
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return; // browser handles it
+  if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/downloads/')) return; // browser handles it
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).then(r => { if (r.ok) caches.open(VERSION).then(c => c.put('/index.html', r.clone())); return r; })
       .catch(async () => (await caches.match('/index.html')) || (await caches.match('/offline.html'))));
