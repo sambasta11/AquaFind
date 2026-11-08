@@ -616,7 +616,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea{border-radius:14px}
 .aql-mark{position:relative;width:108px;height:108px;display:grid;place-items:center}
 .aql.inline .aql-mark{width:64px;height:64px}
 .aql-mark svg{position:relative;width:100%;height:100%;overflow:visible}
-.aql-ghost{stroke:rgba(33,150,243,.16)}
+.aql-ghost{fill:rgba(31,192,216,.18)}
 .aql-rip{position:absolute;inset:6%;border-radius:50%;border:2px solid var(--sky);opacity:0;animation:aqlRip 2.6s cubic-bezier(.2,.6,.3,1) infinite}
 .aql-rip.r2{animation-delay:1.3s}
 .aql-rise{animation:aqlRise 2.8s ease-in-out infinite alternate;will-change:transform}
