@@ -202,6 +202,13 @@ const A = {
   eye(el) { const i = $('#' + el.dataset.t), show = i.type === 'password'; i.type = show ? 'text' : 'password'; el.setAttribute('aria-pressed', show); el.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); el.innerHTML = ico(show ? 'eyeoff' : 'eye', 18); },
   close: () => closeModal(),
   report() { go('#/station/' + routeId() + '/report'); },
+  role(el) {
+    const r = el.dataset.p, w = el.closest('.role-wrap'); if (!w) return; w.dataset.role = r;
+    w.querySelectorAll('.role-tabs [role=tab]').forEach(t => { const on = t === el; t.classList.toggle('on', on); t.setAttribute('aria-selected', on); });
+    $('#si-h').textContent = r === 'admin' ? 'Station admin' : 'Welcome back';
+    $('#si-s').textContent = r === 'admin' ? 'Sign in to manage your station\u2019s availability, reports and details.' : 'Sign in to check which refill stations have water before you head out.';
+    formErr('er', '');
+  },
   demo(el) { const p = el.dataset.p, c = { user: ['user@aquafind.com', 'user123'], admin: ['admin@aquafind.com', 'admin123'], super: ['super@aquafind.com', 'super123'] }[p]; $('#em').value = c[0]; $('#pw').value = c[1]; $('#pw').focus(); },
   soc(el) { return OAUTH.start(el.dataset.p); },
   terms(el) { const t = el.dataset.p; modal(`<div class="dlg-h"><h2>${t}</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div><p class="muted">${t === 'Privacy Policy' ? 'AquaFind stores your name, email and saved stations to show you water availability. Your password is stored securely and never shared. This is a school project demo.' : 'AquaFind shows water availability reported by station administrators and users. It may be out of date, so confirm with the station. This is a school project demo.'}</p><div class="btnrow"><button class="btn primary" data-act="close">Got it</button></div>`, t); },
@@ -356,7 +363,12 @@ const forms = {
   async signin(f) {
     formErr('er', ''); const ok = [rules.email('em'), rules.pass('pw')].every(Boolean); if (!ok) return;
     const b = f.querySelector('[type=submit]'); busy(b, true, 'Signing in…');
-    try { await enter(await api('POST', '/auth/login', { email: val('em'), password: $('#pw').value }), $('#rm').checked); } catch (e) { busy(b, false); formErr('er', e.message); }
+    try {
+      const d = await api('POST', '/auth/login', { email: val('em'), password: $('#pw').value }), as = f.closest('.role-wrap')?.dataset.role || 'user';
+      if (as === 'admin' && d.user.role === 'user') { busy(b, false); return formErr('er', 'This is not a station admin account. Choose \u201cUser\u201d to sign in.'); }
+      if (as === 'user' && d.user.role === 'admin') { busy(b, false); return formErr('er', 'This is a station admin account. Choose \u201cStation admin\u201d above to sign in.'); }
+      await enter(d, $('#rm').checked);
+    } catch (e) { busy(b, false); formErr('er', e.message); }
   },
   async signup(f) {
     formErr('er', ''); const ok = [rules.name('rn'), rules.email('re'), rules.pass('rp'), setErr('rc', $('#rc').value !== $('#rp').value ? 'Passwords do not match.' : ''), (() => { const g = $('#tc').checked; $('#tc-e').textContent = g ? '' : 'Agree to the Terms of Service and Privacy Policy to continue.'; return g; })()].every(Boolean); if (!ok) return;
