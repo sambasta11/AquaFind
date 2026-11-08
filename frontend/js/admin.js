@@ -48,11 +48,34 @@ AV.availability = s => {
   <section class="av-card"><div class="sec-h"><h2>Station information</h2></div><form id="infoform" class="cform" novalidate>${field({ id: 'an', label: 'Station name', val: s.name })}${field({ id: 'aa', label: 'Address', val: s.addr })}${field({ id: 'ap', label: 'Contact number', type: 'tel', val: s.tel })}
   <div class="two">${field({ id: 'ao', label: 'Opens (0\u201323)', type: 'number', val: s.o })}${field({ id: 'ac', label: 'Closes (1\u201324)', type: 'number', val: s.c })}</div><p class="ferr" id="aerr" role="alert"></p><button class="btn outline" type="submit">Save information</button></form></section></div></div>`;
 };
+const REP_SEEN = {};                      // last status shown per report, so a changed card can flash
+const REP_META = { pending: ['Pending', 'rp-pending'], approved: ['Approved', 'rp-approved'], resolved: ['Resolved', 'rp-resolved'], rejected: ['Rejected', 'rp-rejected'] };
+const repWait = r => { const h = (Date.now() - r.t) / 36e5; return r.status === 'pending' && h >= 24 ? `<span class="iss-late">Waiting ${dur(Date.now() - r.t)}</span>` : ''; };
+const issCard = (r, i, fresh) => {
+  const chg = REP_SEEN[r.id] !== undefined && REP_SEEN[r.id] !== r.status;
+  return `<li class="iss-card st-${r.status}${fresh && REP_SEEN[r.id] === undefined ? ' in' : ''}${chg ? ' chg' : ''}" style="--i:${Math.min(i, 9)}">
+    <span class="iss-ic" aria-hidden="true">${ico('flag', 18)}</span>
+    <div class="iss-body">
+      <div class="iss-top"><b class="iss-type">${esc(r.type)}</b>${rtag(r.status)}${repWait(r)}</div>
+      <p class="iss-note ${r.note ? '' : 'muted'}">${esc(r.note || 'No details were added.')}</p>
+      ${r.adminNote ? `<p class="admin-note"><b>Admin note:</b> ${esc(r.adminNote)}</p>` : ''}
+      <div class="iss-meta"><span class="iss-by"><i aria-hidden="true">${esc(initials(r.by || '?'))}</i>${esc(r.by)}</span><span class="muted" title="${esc(dateTime(r.t))}">${ago(r.t)}</span></div>
+    </div>
+    <div class="iss-act"><span class="btnline">${repBtns(r)}</span></div>
+  </li>`;
+};
 AV.issues = () => {
-  const f = S.rf, l = S.reports.filter(r => f === 'all' || (f === 'open' ? repOpen(r) : !repOpen(r)));
-  return `${aHead('Issue reports', 'Corrections users have asked for.')}
-  <div class="tabs" role="tablist" aria-label="Filter reports">${[['open', 'Open'], ['resolved', 'Closed'], ['all', 'All']].map(c => `<button role="tab" class="tab ${f === c[0] ? 'on' : ''}" aria-selected="${f === c[0]}" data-act="rf" data-p="${c[0]}">${c[1]}${c[0] === 'open' ? ` <span class="num">${S.reports.filter(repOpen).length}</span>` : ''}</button>`).join('')}</div>
-  ${tbl(['Reported', 'By', 'Issue', 'Details', 'Status', ''], l.map(r => [dateTime(r.t), esc(r.by), esc(r.type), esc(r.note || '—'), rtag(r.status), `<span class="btnline">${repBtns(r)}</span>`]), 'No reports in this view.')}`;
+  const f = S.rf, all = S.reports, cnt = k => all.filter(r => r.status === k).length;
+  const l = all.filter(r => f === 'all' || (f === 'open' ? repOpen(r) : !repOpen(r)));
+  const stats = [['pending', 'Pending review'], ['approved', 'Approved'], ['resolved', 'Resolved'], ['rejected', 'Rejected']];
+  const tabs = [['open', 'Open', all.filter(repOpen).length], ['resolved', 'Closed', all.filter(r => !repOpen(r)).length], ['all', 'All', all.length]];
+  const html = `<div class="iss${AD_FRESH ? ' fx' : ''}">${aHead('Issue reports', 'Corrections users have asked for. Review each one, then approve, reject or resolve it.')}
+  <dl class="iss-stats">${stats.map(([k, lb]) => `<div class="iss-stat ${REP_META[k][1]}"><dt>${lb}</dt><dd class="num" data-count="${cnt(k)}" data-key="iss-${k}">${cnt(k)}</dd></div>`).join('')}</dl>
+  <div class="tabs iss-tabs" role="tablist" aria-label="Filter reports">${tabs.map(c => `<button role="tab" class="tab ${f === c[0] ? 'on' : ''}" aria-selected="${f === c[0]}" data-act="rf" data-p="${c[0]}">${c[1]} <span class="num iss-n">${c[2]}</span></button>`).join('')}</div>
+  ${l.length ? `<ul class="iss-list" aria-live="polite">${l.map((r, i) => issCard(r, i, AD_FRESH)).join('')}</ul>`
+    : `<div class="iss-empty"><span class="iss-check" aria-hidden="true">${ico('check', 26)}</span><b>${f === 'open' ? 'All clear' : 'Nothing here'}</b><p class="muted">${f === 'open' ? 'No open issue reports. New corrections from users will show up here.' : 'No reports in this view.'}</p></div>`}</div>`;
+  all.forEach(r => { REP_SEEN[r.id] = r.status; });
+  return html;
 };
 AV.community = () => `${aHead('Community reports', 'Water status reports for your station. Remove spam or mistaken reports.')}
   ${tbl(['Reported', 'Reporter', 'Says', 'Message', ''], S.ad.wr.map(r => [dateTime(r.t), esc(r.by), `<span class="st st-${r.has ? 'available' : 'out'}">${gauge(r.has ? 'available' : 'out', 14)}<span>${r.has ? 'Has water' : 'No water'}</span></span>`, esc(r.note || '—'), `<button class="btn sm quiet danger" data-act="wrdel" data-id="${r.id}">Remove</button>`]), 'No community reports yet.')}`;
