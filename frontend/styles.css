@@ -1681,3 +1681,61 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 
 
 
+
+
+/* =====================================================================
+   v7 AQUA PANEL: every white page background becomes a soft light-blue
+   panel with water flowing across the top (same look as Review
+   management). Cards stay white with a thin blue border.
+   Safe to remove: delete everything from this comment down.
+   ===================================================================== */
+:root{
+  --panel:#E8F4FB;--card-line:#CBE7F5;
+  --wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 28' preserveAspectRatio='none'%3E%3Cpath d='M0 14C25 0 75 0 100 14S175 28 200 14V28H0Z' fill='%23E8F4FB'/%3E%3C/svg%3E");
+  --wave-w:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 28' preserveAspectRatio='none'%3E%3Cpath d='M0 14C25 0 75 0 100 14S175 28 200 14V28H0Z' fill='%23E8F4FB'/%3E%3C/svg%3E");
+  /* back water: lighter, long swell */
+  --aq-wave-a:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='150' viewBox='0 0 900 150'%3E%3Cpath d='M0 0H900V88C750 108 600 108 450 88S150 68 0 88Z' fill='%23CFEBF8'/%3E%3C/svg%3E");
+  /* front water: darker, shorter swell */
+  --aq-wave-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='150' viewBox='0 0 600 150'%3E%3Cpath d='M0 0H600V58C500 76 400 76 300 58S100 40 0 58Z' fill='%23B9E2F3' fill-opacity='.9'/%3E%3C/svg%3E");
+}
+
+/* page panel + moving water */
+#app{position:relative;isolation:isolate;background:var(--panel)}
+#app::before,#app::after{content:"";position:absolute;z-index:-1;top:0;left:0;height:150px;pointer-events:none;background-repeat:repeat-x;background-position:0 0}
+#app::before{width:calc(100% + 900px);background-image:var(--aq-wave-a);background-size:900px 150px;animation:aqFlowL 24s linear infinite,aqBob 7s ease-in-out infinite}
+#app::after{width:calc(100% + 600px);background-image:var(--aq-wave-b);background-size:600px 150px;animation:aqFlowR 15s linear infinite,aqBob 5s ease-in-out -2s infinite reverse}
+@keyframes aqFlowL{to{transform:translateX(-900px)}}
+@keyframes aqFlowR{from{transform:translateX(-600px)}to{transform:translateX(0)}}
+@keyframes aqBob{0%,100%{translate:0 -5px}50%{translate:0 7px}}
+
+/* white bars become translucent blue so the water shows through */
+.mast{background:rgba(232,244,251,.74);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.tabbar{background:rgba(240,248,253,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+@media(min-width:900px){.mast{background:rgba(232,244,251,.74)}}
+
+/* sign in / sign up panels */
+.auth-in,.auth-foot{background:var(--panel)}
+@media(min-width:900px){
+  .is-auth .auth{position:relative;overflow:hidden;background:var(--panel)}
+  .is-auth .auth::before{content:"";position:absolute;z-index:0;top:0;right:0;width:48%;height:150px;pointer-events:none;background:var(--aq-wave-a) repeat-x 0 0/900px 150px;animation:aqSlideA 24s linear infinite}
+  .is-auth .auth::after{content:"";position:absolute;z-index:0;top:0;right:0;width:48%;height:150px;pointer-events:none;background:var(--aq-wave-b) repeat-x 0 0/600px 150px;animation:aqSlideB 15s linear infinite}
+  .is-auth .auth-in,.is-auth .auth-foot{background:transparent;position:relative;z-index:1}
+}
+@keyframes aqSlideA{to{background-position-x:-900px}}
+@keyframes aqSlideB{to{background-position-x:600px}}
+
+/* white cards: thin blue border, soft blue glow */
+.supply,.srow,.set,.feed>li,.figs>div,.alist li,.tbl tr,.reviews,.card,.kpi,.ov-vote,.ov-empty,.ov-tl,.av-card,
+.iss-stat,.iss-card,.iss-empty,.cm-card,.an-compose,.an-card,.fo-card,.fd-card,.nt-card,.sv-card,.tbl-wrap{
+  border:1px solid var(--card-line)!important;box-shadow:0 2px 12px rgba(33,150,243,.06)}
+.srow.sel{box-shadow:0 0 0 2px var(--aqua),var(--sh-2)}
+.tbl-wrap{overflow:hidden}
+@media(min-width:900px){.tbl tr{border:0!important;box-shadow:none}.tbl-wrap{overflow-x:auto}}
+
+/* page titles sit on the water */
+.adm-main .ahead h1{font-size:clamp(28px,3.4vw,38px);font-weight:800;color:#0D3B66;letter-spacing:-.025em}
+.adm-main .ahead p{color:#4F7391}
+
+@media(prefers-reduced-motion:reduce){
+  #app::before,#app::after,.is-auth .auth::before,.is-auth .auth::after{animation:none!important}
+}

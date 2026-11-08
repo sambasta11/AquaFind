@@ -11,17 +11,17 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
   if (document.getElementById('sx-style')) return;
   const el = document.createElement('style'); el.id = 'sx-style';
   el.textContent = `/* ===== System console: moderation + people design (scoped to .sx, safe to remove) ===== */
-.sx{--sx-green:#1FA06F;--sx-clay:#C4776A;--sx-gray:#97A3B2;--sx-navy:#0F2A4A;--sx-blue:#2196F3;--sx-teal:#2BB3AE;--sx-track:#E6F2FC;--sx-ease:cubic-bezier(.2,.7,.2,1)}
+.sx{--sx-green:#1AB5CC;--sx-clay:#E0695D;--sx-gray:#9DB4CA;--sx-navy:#0D3B66;--sx-blue:#2196F3;--sx-teal:#1AB5CC;--sx-track:#D5EAF6;--sx-line:#CBE7F5;--sx-ease:cubic-bezier(.2,.7,.2,1)}
 .sx-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0 0 20px}
-.sx-kpi{position:relative;overflow:hidden;background:#fff;border-radius:16px;padding:16px 16px 14px 18px;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08))}
-.sx-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc)}
+.sx-kpi{position:relative;overflow:hidden;background:#fff;border:1px solid var(--sx-line);border-radius:20px;padding:16px 16px 14px 22px;box-shadow:0 2px 12px rgba(33,150,243,.06)}
+.sx-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--kc)}
 .sx-kpi dt{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.06em}
 .sx-kpi dd{margin:6px 0 0;font:800 32px/1.1 var(--display);letter-spacing:-.03em;color:var(--sx-navy)}
 .sx-kpi.tint dd{color:var(--kc)}
 .sx-kpi small{display:block;margin-top:3px;font-size:12.5px;color:var(--slate)}
 .sx-dot{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sx-clay)}
 .sx-cols{display:grid;grid-template-columns:1fr;gap:16px;margin:0 0 18px}
-.sx-card{background:#fff;border-radius:18px;padding:20px;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08));min-width:0}
+.sx-card{background:#fff;border:1px solid var(--sx-line);border-radius:22px;padding:22px 24px;box-shadow:0 2px 12px rgba(33,150,243,.06);min-width:0}
 .sx-card h2{margin:0 0 16px;font-size:16px;letter-spacing:-.01em;color:var(--sx-navy)}
 .sx-dn{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
 .sx-donut-w{position:relative;width:150px;height:150px;flex:none}
@@ -36,10 +36,11 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
 .sx-lg i{width:10px;height:10px;border-radius:50%;background:var(--c)}
 .sx-lg .num{font-weight:800}
 .sx-bars{display:grid;gap:14px}
-.sx-br{display:grid;grid-template-columns:54px 1fr 22px;gap:12px;align-items:center;font-size:13px;font-weight:600;color:var(--sx-navy)}
+.sx-br{display:grid;grid-template-columns:58px 1fr 22px;gap:12px;align-items:center;font-size:13px;font-weight:600;color:var(--sx-navy)}
 .sx-br b{text-align:right}
-.sx-bar{display:block;height:8px;border-radius:6px;background:var(--sx-track);overflow:hidden}
-.sx-bar i{display:block;height:100%;border-radius:6px;background:var(--c);transform-origin:left center}
+.sx-bar{display:block;height:16px;border-radius:9px;background:var(--sx-track);overflow:hidden}
+.sx-bar i{position:relative;display:block;height:100%;border-radius:9px;background:var(--c);transform-origin:left center;overflow:hidden}
+.sx-bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.38) 25%,transparent 25% 50%,rgba(255,255,255,.38) 50% 75%,transparent 75%);background-size:28px 28px}
 .sx-nm{display:grid;gap:14px;margin:0;padding:0;list-style:none}
 .sx-nm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
 .sx-nm .who{display:block;min-width:0}.sx-nm b{display:block;font-size:14px;color:var(--sx-navy)}
@@ -49,10 +50,10 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
 .sx-search .ic{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--slate);pointer-events:none}
 .sx-search input{width:100%;height:46px;padding:0 16px 0 44px;border:0;border-radius:14px;background:#fff;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08));font:inherit;color:var(--ink);outline:0;transition:box-shadow .2s}
 .sx-search input:focus{box-shadow:0 0 0 2px var(--aqua),var(--sh-3,0 4px 18px rgba(16,42,67,.08))}
-.sx-tabs{display:flex;gap:22px;margin:6px 0 12px;border-bottom:1px solid var(--rule);overflow-x:auto}
+.sx-tabs{display:flex;gap:22px;margin:6px 0 12px;border-bottom:1px solid var(--sx-line);overflow-x:auto}
 .sx-tab{position:relative;background:none;border:0;padding:12px 0;font-size:14px;font-weight:600;color:var(--slate);white-space:nowrap;cursor:pointer;transition:color .2s}
 .sx-tab:hover{color:var(--sx-navy)}.sx-tab.on{color:var(--sx-navy)}
-.sx-tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--sx-teal);transform:scaleX(0);transition:transform .3s var(--sx-ease)}
+.sx-tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:3px;background:var(--sx-teal);transform:scaleX(0);transition:transform .3s var(--sx-ease)}
 .sx-tab.on::after{transform:scaleX(1)}
 .sx-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .sx-chip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--rule-2);background:#fff;font-size:13.5px;font-weight:600;color:var(--sx-navy);cursor:pointer;transition:background-color .2s,color .2s,border-color .2s,transform .15s}
@@ -62,18 +63,24 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
 .sx-chip.on .n{background:rgba(255,255,255,.2);color:#fff}
 .sx-count{margin:0 0 10px;font-size:13px;color:var(--slate)}
 .sx-rv{display:grid;gap:12px;margin:0;padding:0;list-style:none}
-.sx-rc{position:relative;overflow:hidden;background:#fff;border-radius:16px;padding:16px 18px 14px 22px;box-shadow:var(--sh-3,0 4px 18px rgba(16,42,67,.08))}
-.sx-rc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.sx-rc{position:relative;overflow:hidden;background:#fff;border:1px solid var(--sx-line);border-radius:20px;padding:16px 18px 14px 26px;box-shadow:0 2px 12px rgba(33,150,243,.06)}
+.sx-rc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c)}
 .sx-rc.is-flagged{--c:var(--sx-clay)}.sx-rc.is-hidden{--c:var(--sx-gray)}.sx-rc.is-published{--c:var(--sx-green)}
 .sx-rc-h{display:flex;align-items:center;gap:10px}
 .sx-rc-who{display:grid;line-height:1.25;min-width:0}.sx-rc-who b{font-size:14.5px;color:var(--sx-navy)}.sx-rc-who span{font-size:12.5px;color:var(--slate)}
 .sx-rc-r{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--slate)}
-.sx-rc-st{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0;font-size:13px;font-weight:600;color:#12806A}
+.sx-rc-st{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0;font-size:13.5px;font-weight:600;color:#0E7F93}
 .sx-rc-c{margin:8px 0 0;font-size:14.5px;color:var(--ink);overflow-wrap:anywhere}
 .sx-rc-f{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
 .sx-rc-f .tags{display:flex;gap:6px;align-items:center}
-.sx .av.sx-avg{background:linear-gradient(135deg,#1FA06F,#2BB3AE);color:#fff}
+.sx .av.sx-avg{background:#1AB5CC;color:#fff}
 .sx .av.sx-avb{background:var(--sx-blue);color:#fff}
+.sx .tag.rs-rejected{background:#FDE6E3;border-color:transparent;color:#9C3B33;border-radius:9px;padding:4px 12px;font-size:13px}
+.sx .tag.ok{background:#DDF4F8;border-color:transparent;color:#0B6B7C;border-radius:9px;padding:4px 12px;font-size:13px}
+.sx .btn.outline{border-color:#8CCBE0;color:#0F5E78;background:#fff;border-radius:14px}
+.sx .btn.outline:hover{background:#E8F4FB;border-color:#1AB5CC}
+.sx .ahead h1{font-size:clamp(28px,3.6vw,38px);font-weight:800;color:var(--sx-navy);letter-spacing:-.025em}
+.sx .ahead p{color:#4F7391}
 .sx-empty{padding:28px 0;color:var(--slate);text-align:center;font-size:14px}
 @media(min-width:760px){.sx-kpis{grid-template-columns:repeat(4,1fr)}.sx-cols{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:no-preference){
@@ -108,12 +115,14 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
 .sx.fx .sx-in .tbl tbody tr:nth-child(8){animation-delay:1385ms}
 .sx.fx .sx-in .tbl tbody tr:nth-child(9){animation-delay:1440ms}
 .sx.fx .sx-in .tbl tbody tr:nth-child(10){animation-delay:1495ms}
+.sx-bar i::after{animation:sxStripe 1.1s linear infinite}
 .sx-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--sx-clay);opacity:0;animation:sxPing 1.8s ease-out infinite}
 .sx-rc,.sx-kpi{transition:transform .2s var(--sx-ease),box-shadow .2s}
 .sx-rc:hover{transform:translateY(-2px)}
 }
 @keyframes sxUp{from{opacity:0;transform:translateY(14px)}}
 @keyframes sxFade{from{opacity:0}}
+@keyframes sxStripe{to{background-position:28px 0}}
 @keyframes sxSeg{from{stroke-dasharray:0 100}}
 @keyframes sxGrow{from{transform:scaleX(0)}}
 @keyframes sxPing{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
@@ -121,8 +130,8 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
   document.head.appendChild(el);
 })();
 let SA_KEY = '', SA_FX = false;   // SA_FX: true only when you arrive on a section, so filters and live refreshes never replay the intro animation
-const SX = { green: '#1FA06F', clay: '#C4776A', gray: '#97A3B2', navy: '#0F2A4A', blue: '#2196F3', teal: '#2BB3AE' };
-const SX_GRAD = 'linear-gradient(90deg,#1FA06F,#41C09A)';
+const SX = { green: '#1AB5CC', clay: '#E0695D', gray: '#9DB4CA', navy: '#0D3B66', blue: '#2196F3', teal: '#1AB5CC' };
+const SX_GRAD = 'linear-gradient(90deg,#1AB5CC,#3FD0E0)';
 const sxKpi = (label, val, key, sub, color, i, o = {}) => `<div class="sx-kpi${o.tint ? ' tint' : ''}" style="--kc:${color};--i:${i}"><dt>${label}${o.dot ? '<i class="sx-dot" aria-hidden="true"></i>' : ''}</dt><dd class="num"${o.plain ? '' : ` data-count="${val}" data-key="${key}"`}>${val}</dd><small>${sub}</small></div>`;
 const sxDonut = parts => {
   const live = parts.filter(p => p.n), tot = live.reduce((a, p) => a + p.n, 0), gap = live.length > 1 ? 1.6 : 0; let off = 0;
@@ -275,7 +284,7 @@ const rvCard = (r, i) => { const st = rvState(r);
   return `<li class="sx-rc is-${st}" style="--i:${Math.min(i, 9)}"><div class="sx-rc-h">${avatar({ name: r.by }, 36, 'sx-avg')}<div class="sx-rc-who"><b>${esc(r.by)}</b><span title="${esc(dateTime(r.t))}">${ago(r.t)}</span></div><div class="sx-rc-r">${stars(r.rating, 12)}<span class="num">${(+r.rating).toFixed(1)}</span></div></div>
   <a class="sx-rc-st" href="#/station/${r.sid}">${ico('store', 14)}<span>${esc(r.station)}</span></a>
   <p class="sx-rc-c${r.comment ? '' : ' muted'}">${esc(r.comment || 'No comment was written.')}</p>
-  <div class="sx-rc-f"><span class="tags">${st === 'hidden' ? '<span class="tag rs-rejected">Hidden</span>' : st === 'flagged' ? '<span class="tag rs-rejected">Flagged</span>' : '<span class="tag ok">Published</span>'}${r.flags ? `<span class="muted">${r.flags} flag${r.flags === 1 ? '' : 's'}</span>` : ''}</span><span class="btnline">${rvBtns(r)}<button class="btn sm quiet danger" data-act="rvrm" data-id="${r.id}">Delete</button></span></div></li>`; };
+  <div class="sx-rc-f"><span class="tags">${st === 'hidden' ? '<span class="tag rs-rejected">Hidden</span>' : st === 'flagged' ? `<span class="tag rs-rejected">Flagged${r.flags ? ' · ' + r.flags + ' flag' + (r.flags === 1 ? '' : 's') : ''}</span>` : '<span class="tag ok">Published</span>'}${r.flags && st !== 'flagged' ? `<span class="muted">${r.flags} flag${r.flags === 1 ? '' : 's'}</span>` : ''}</span><span class="btnline">${rvBtns(r)}<button class="btn sm quiet danger" data-act="rvrm" data-id="${r.id}">Delete</button></span></div></li>`; };
 const rvCards = l => l.length ? l.map(rvCard).join('') : '<li class="sx-empty">No reviews in this view.</li>';
 SV.reviews = () => {
   const L = S.sa.reviews, c = rvCounts(L), n = L.length, an = S.sa.an && S.sa.an.reviews, f = S.sa.vs, l = rvFiltered();
@@ -283,9 +292,9 @@ SV.reviews = () => {
   const dist = [5, 4, 3, 2, 1].map(k => L.filter(r => Math.min(5, Math.max(1, Math.round(r.rating))) === k).length), mx = Math.max(1, ...dist), pub = pct(c.published, n);
   const parts = [{ label: 'Published', n: c.published, color: SX.green }, { label: 'Flagged', n: c.flagged, color: SX.clay }, { label: 'Hidden', n: c.hidden, color: SX.gray }];
   return `<div class="sx${SA_FX ? ' fx' : ''}">${aHead('Review management', 'Reviews that users flagged appear first. Hide inappropriate feedback or remove it entirely.')}
-  <dl class="sx-kpis">${sxKpi('Total reviews', n, 'sx-rv-n', 'from all stations', SX.green, 0)}${sxKpi('Average rating', n ? avg.toFixed(1) : '–', 'sx-rv-avg', 'out of 5 stars', SX.clay, 1, { plain: true })}${sxKpi('Flagged', c.flagged, 'sx-rv-fl', 'need your attention', SX.clay, 2, { tint: true, dot: c.flagged > 0 })}${sxKpi('Hidden', c.hidden, 'sx-rv-hd', 'not shown to users', '#51607A', 3)}</dl>
+  <dl class="sx-kpis">${sxKpi('Total reviews', n, 'sx-rv-n', 'from all stations', SX.green, 0)}${sxKpi('Average rating', n ? avg.toFixed(1) : '–', 'sx-rv-avg', 'out of 5 stars', SX.blue, 1, { plain: true })}${sxKpi('Flagged', c.flagged, 'sx-rv-fl', 'need attention', SX.clay, 2, { tint: true, dot: c.flagged > 0 })}${sxKpi('Hidden', c.hidden, 'sx-rv-hd', 'not shown to users', SX.navy, 3)}</dl>
   <div class="sx-cols"><section class="sx-card" style="--i:0"><h2>Moderation</h2><div class="sx-dn"><div class="sx-donut-w" role="img" aria-label="${pub}% published: ${c.published} published, ${c.flagged} flagged, ${c.hidden} hidden">${sxDonut(parts)}<div class="sx-dc"><b><span class="num" data-count="${pub}" data-key="sx-rv-pct">${pub}</span>%</b><small>published</small></div></div>${sxLegend(parts)}</div></section>
-  <section class="sx-card" style="--i:1"><h2>Rating breakdown</h2><div class="sx-bars">${[5, 4, 3, 2, 1].map((k, i) => `<div class="sx-br"><span>${k} star${k > 1 ? 's' : ''}</span><span class="sx-bar"><i style="width:${dist[i] / mx * 100}%;--c:${k > 3 ? SX_GRAD : SX.clay};--i:${i}"></i></span><b class="num">${dist[i]}</b></div>`).join('')}</div></section></div>
+  <section class="sx-card" style="--i:1"><h2>Rating breakdown</h2><div class="sx-bars">${[5, 4, 3, 2, 1].map((k, i) => `<div class="sx-br"><span>${k} star${k > 1 ? 's' : ''}</span><span class="sx-bar"><i style="width:${dist[i] / mx * 100}%;--c:${k === 5 ? SX_GRAD : k === 4 ? SX.blue : k === 1 ? '#E0524F' : '#F0998F'};--i:${i}"></i></span><b class="num">${dist[i]}</b></div>`).join('')}</div></section></div>
   <div class="sx-search">${ico('search', 18)}<label class="sr" for="vq">Search reviews</label><input id="vq" data-sa="vq" type="search" value="${esc(S.sa.vq || '')}" placeholder="Search station, author or comment" autocomplete="off"></div>
   <div class="sx-tabs" role="tablist" aria-label="Filter reviews">${VSTATS.map(t => `<button role="tab" class="sx-tab ${f === t[0] ? 'on' : ''}" aria-selected="${f === t[0]}" data-act="savs" data-p="${t[0]}">${t[1]} <span class="num">${c[t[0]]}</span></button>`).join('')}</div>
   <p class="sx-count" id="rvcount" aria-live="polite">${l.length} of ${n} reviews</p><ul class="sx-rv${SA_FX ? ' sx-in' : ''}" id="rvlist">${rvCards(l)}</ul></div>`;
