@@ -77,13 +77,58 @@ AV.issues = () => {
   all.forEach(r => { REP_SEEN[r.id] = r.status; });
   return html;
 };
-AV.community = () => `${aHead('Community reports', 'Water status reports for your station. Remove spam or mistaken reports.')}
-  ${tbl(['Reported', 'Reporter', 'Says', 'Message', ''], S.ad.wr.map(r => [dateTime(r.t), esc(r.by), `<span class="st st-${r.has ? 'available' : 'out'}">${gauge(r.has ? 'available' : 'out', 14)}<span>${r.has ? 'Has water' : 'No water'}</span></span>`, esc(r.note || '—'), `<button class="btn sm quiet danger" data-act="wrdel" data-id="${r.id}">Remove</button>`]), 'No community reports yet.')}`;
-AV.announcements = () => `${aHead('Announcements', 'Sent to users who saved your station, and shown in their notifications.')}
-  <div class="a-cols"><section><div class="sec-h"><h2>New announcement</h2></div><form id="annform" class="cform" novalidate>${field({ id: 'at', label: 'Title', val: '' })}<div class="field"><label for="ab">Message</label><textarea id="ab" rows="4" maxlength="500"></textarea><p class="ferr" id="ab-e" role="alert"></p></div><p class="ferr" id="anerr" role="alert"></p><button class="btn primary" type="submit">Publish announcement</button></form></section>
-  <section><div class="sec-h"><h2>Sent</h2></div>${S.ad.ann.length ? `<ul class="alist">${S.ad.ann.map(a => `<li><div><b>${esc(a.title)}</b><p>${esc(a.body)}</p><p class="muted">${dateTime(a.t)}</p></div></li>`).join('')}</ul>` : '<p class="muted pad">Nothing sent yet.</p>'}</section></div>`;
-AV.people = () => `${aHead('Followers', 'Users who saved your station. Contact details are not shown.')}
-  ${tbl(['Name', 'Water reports', 'Issue reports', 'Member since'], S.ad.people.map(p => [esc(p.name), `<span class="num">${p.water_reports}</span>`, `<span class="num">${p.issue_reports}</span>`, new Date(p.since).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })]), 'No followers yet.')}`;
+const WR_SEEN = new Set(), AN_SEEN = new Set();   // cards already shown, so only new ones animate in
+const cmCard = (r, i, fresh) => {
+  const has = !!r.has, isNew = fresh && !WR_SEEN.has(r.id);
+  return `<li class="cm-card ${has ? 'cm-yes' : 'cm-no'}${isNew ? ' in' : ''}" style="--i:${Math.min(i, 9)}">
+    <span class="cm-ic" aria-hidden="true">${gauge(has ? 'available' : 'out', 22)}</span>
+    <div class="cm-body">
+      <div class="cm-top"><b>${has ? 'Has water' : 'No water'}</b><span class="muted" title="${esc(dateTime(r.t))}">${ago(r.t)}</span></div>
+      <p class="cm-msg ${r.note ? '' : 'muted'}">${esc(r.note || 'No message was added.')}</p>
+      <div class="cm-meta"><span class="iss-by"><i aria-hidden="true">${esc(initials(r.by || '?'))}</i>${esc(r.by)}</span></div>
+    </div>
+    <button class="btn sm quiet danger cm-rm" data-act="wrdel" data-id="${r.id}" aria-label="Remove report from ${esc(r.by)}">${ico('trash', 15)}<span>Remove</span></button>
+  </li>`;
+};
+AV.community = () => {
+  const l = S.ad.wr, yes = l.filter(r => r.has).length, no = l.length - yes, yp = l.length ? Math.round(yes / l.length * 100) : 0;
+  const html = `<div class="cm${AD_FRESH ? ' fx' : ''}">${aHead('Community reports', 'Water status reports for your station. Remove spam or mistaken reports.')}
+  <dl class="iss-stats cm-stats"><div class="iss-stat rp-resolved"><dt>Says water</dt><dd class="num" data-count="${yes}" data-key="cm-yes">${yes}</dd></div><div class="iss-stat rp-rejected"><dt>Says no water</dt><dd class="num" data-count="${no}" data-key="cm-no">${no}</dd></div></dl>
+  ${l.length ? `<div class="ov-vote cm-vote" aria-label="Community agreement"><div class="ov-vote-h"><b>Community agreement</b><span class="muted">${yp}% say water is available</span></div><span class="ov-bar"><i class="seg-available" style="width:${yp}%"></i><i class="seg-out" style="width:${100 - yp}%"></i></span></div>
+  <ul class="iss-list cm-list">${l.map((r, i) => cmCard(r, i, AD_FRESH)).join('')}</ul>`
+    : `<div class="iss-empty"><span class="iss-check" aria-hidden="true">${ico('users', 26)}</span><b>No community reports yet</b><p class="muted">When users report the water status at your station, it shows up here.</p></div>`}</div>`;
+  l.forEach(r => WR_SEEN.add(r.id));
+  return html;
+};
+const anCard = (a, i, fresh) => `<li class="an-card${(fresh || AN_SEEN.size) && !AN_SEEN.has(a.id) ? ' in' : ''}" style="--i:${Math.min(i, 9)}">
+  <span class="an-ic" aria-hidden="true">${ico('megaphone', 18)}</span>
+  <div class="an-body"><b class="an-t">${esc(a.title)}</b><p class="an-b">${esc(a.body)}</p><p class="muted an-d">${dateTime(a.t)} \u00b7 ${ago(a.t)}</p></div></li>`;
+AV.announcements = () => {
+  const n = S.ad.people.length, l = S.ad.ann;
+  const html = `<div class="an${AD_FRESH ? ' fx' : ''}">${aHead('Announcements', 'Sent to users who saved your station, and shown in their notifications.')}
+  <div class="a-cols an-cols"><section class="an-compose"><div class="sec-h"><h2>New announcement</h2></div><p class="muted an-to">${ico('users', 14)} Goes to <b class="num">${n}</b> ${n === 1 ? 'follower' : 'followers'}</p>
+  <form id="annform" class="cform" novalidate>${field({ id: 'at', label: 'Title', val: '' })}<div class="field"><label for="ab">Message</label><textarea id="ab" rows="4" maxlength="500" placeholder="What do your followers need to know?"></textarea><div class="an-foot"><p class="ferr" id="ab-e" role="alert"></p><span class="an-count muted num" id="ab-n" aria-live="off">0/500</span></div></div><p class="ferr" id="anerr" role="alert"></p><button class="btn primary an-send" type="submit">${ico('send', 16)} Publish announcement</button></form></section>
+  <section class="an-sent"><div class="sec-h"><h2>Sent</h2>${l.length ? `<span class="muted num">${l.length}</span>` : ''}</div>${l.length ? `<ul class="an-list">${l.map((a, i) => anCard(a, i, AD_FRESH)).join('')}</ul>` : `<div class="iss-empty an-empty"><span class="iss-check" aria-hidden="true">${ico('megaphone', 24)}</span><b>Nothing sent yet</b><p class="muted">Your published announcements will be listed here.</p></div>`}</section></div></div>`;
+  l.forEach(a => AN_SEEN.add(a.id));
+  return html;
+};
+document.addEventListener('input', e => { if (e.target && e.target.id === 'ab') { const c = document.getElementById('ab-n'); if (c) { c.textContent = e.target.value.length + '/500'; c.classList.toggle('warn', e.target.value.length > 450); } } });
+const FOL_SEEN = new Set();
+const folCard = (p, i, fresh) => `<li class="fo-card${fresh && !FOL_SEEN.has(p.name + p.since) ? ' in' : ''}" style="--i:${Math.min(i, 11)}">
+  <span class="fo-av" aria-hidden="true">${esc(initials(p.name || '?'))}</span>
+  <div class="fo-body"><b class="fo-name">${esc(p.name)}</b><span class="muted fo-since">Following since ${new Date(p.since).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}</span></div>
+  <div class="fo-chips"><span class="fo-chip fo-w" title="Water reports">${gauge('available', 13)}<b class="num">${p.water_reports}</b><small>water</small></span><span class="fo-chip fo-i" title="Issue reports">${ico('flag', 13)}<b class="num">${p.issue_reports}</b><small>issues</small></span></div>
+</li>`;
+AV.people = () => {
+  const l = S.ad.people, wk = l.filter(p => Date.now() - new Date(p.since).getTime() < 7 * 864e5).length;
+  const wsum = l.reduce((a, p) => a + (+p.water_reports || 0), 0), isum = l.reduce((a, p) => a + (+p.issue_reports || 0), 0);
+  const html = `<div class="fo${AD_FRESH ? ' fx' : ''}">${aHead('Followers', 'Users who saved your station. Contact details are not shown.')}
+  <dl class="iss-stats fo-stats"><div class="iss-stat rp-approved"><dt>Followers</dt><dd class="num" data-count="${l.length}" data-key="fo-n">${l.length}</dd></div><div class="iss-stat rp-resolved"><dt>New this week</dt><dd class="num" data-count="${wk}" data-key="fo-wk">${wk}</dd></div><div class="iss-stat rp-pending"><dt>Water reports</dt><dd class="num" data-count="${wsum}" data-key="fo-w">${wsum}</dd></div><div class="iss-stat rp-rejected"><dt>Issue reports</dt><dd class="num" data-count="${isum}" data-key="fo-i">${isum}</dd></div></dl>
+  ${l.length ? `<ul class="fo-list">${l.map((p, i) => folCard(p, i, AD_FRESH)).join('')}</ul>`
+    : `<div class="iss-empty"><span class="iss-check" aria-hidden="true">${ico('heart', 26)}</span><b>No followers yet</b><p class="muted">When users save your station, they will appear here and get your announcements.</p></div>`}</div>`;
+  l.forEach(p => FOL_SEEN.add(p.name + p.since));
+  return html;
+};
 
 function adminView(sec) {
   const s = get(S.user.station);
