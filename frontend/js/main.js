@@ -181,6 +181,7 @@ const A = {
   pick(el) { selectStation(el.dataset.id); if (true) { S.sheet = 'peek'; $('.mapws').dataset.sheet = 'peek'; refreshMapList(); } history.replaceState(null, '', '#/map/' + el.dataset.id); },
   deselect() { S.sel = null; paintPins(); refreshMapList(); history.replaceState(null, '', '#/map'); },
   dmode(el) { S.mode = el.dataset.p; render(); }, dretry() { loadRoute(); },
+  cfilt(el) { S.cf = el.dataset.p; renderKeep(); },
   reptab(el) { S.repTab = el.dataset.p; if (S.repTab === 'mine') loadIssues(); render(); },   // always refresh: an admin may have changed a report's status
   nf(el) { S.nf = el.dataset.p; render(); },
   readall() { myN().forEach(n => n.read = true); renderKeep(); api('PUT', '/notifications/read-all').catch(() => { }); },

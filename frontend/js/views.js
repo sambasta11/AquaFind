@@ -155,37 +155,83 @@ const waterForm = (p, sid) => `<form class="wform" data-form="water" data-p="${p
   <fieldset class="field"><legend>What do you see?</legend><div class="radios"><label class="radio y"><input type="radio" name="${p}v" value="1">${gauge('available', 18)}<span>Has water</span></label><label class="radio n"><input type="radio" name="${p}v" value="0">${gauge('out', 18)}<span>No water</span></label></div></fieldset>
   <div class="field"><label for="${p}nt">Message <span class="opt">optional</span></label><textarea id="${p}nt" maxlength="300" rows="2" placeholder="e.g. Short line, water is clear"></textarea></div>
   <p class="ferr" id="${p}err" role="alert"></p><div class="btnrow"><button class="btn primary" type="submit">Submit report</button></div></form>`;
-const feedItem = r => `<li class="fitem"><span class="f-g">${gauge(r.has ? 'available' : 'out', 20)}</span><div><p><a href="#/station/${r.sid}"><b>${esc(r.station)}</b></a> <span class="${r.has ? 't-yes' : 't-no'}">${r.has ? 'has water' : 'no water'}</span></p>${r.note ? `<p class="f-note">${esc(r.note)}</p>` : ''}<p class="muted who">${avatar(r.mine ? S.user : { name: r.by, avatar: r.av }, 20, 'xs')}<span>${r.mine ? 'You' : esc(r.by)} · ${ago(r.t)}</span></p></div></li>`;
+const FEED_SEEN = new Set();
+const feedItem = (r, i = 0, fresh = false) => {
+  const has = !!r.has, live = Date.now() - r.t < 15 * M, isNew = fresh && !FEED_SEEN.has(r.id);
+  return `<li class="fd-card ${has ? 'fd-yes' : 'fd-no'}${isNew ? ' in' : ''}${r.mine ? ' fd-mine' : ''}" style="--i:${Math.min(i, 9)}">
+    <span class="fd-ic" aria-hidden="true">${gauge(has ? 'available' : 'out', 22)}</span>
+    <div class="fd-body">
+      <div class="fd-top"><a class="fd-st" href="#/station/${r.sid}">${esc(r.station)}</a><span class="fd-pill">${has ? 'Has water' : 'No water'}</span></div>
+      ${r.note ? `<p class="fd-note">${esc(r.note)}</p>` : ''}
+      <p class="fd-who">${avatar(r.mine ? S.user : { name: r.by, avatar: r.av }, 22, 'xs')}<span>${r.mine ? '<b>You</b>' : esc(r.by)}</span><span class="fd-dot" aria-hidden="true"></span><span class="fd-time">${live ? '<i class="ov-live" aria-hidden="true"></i>' : ''}${ago(r.t)}</span></p>
+    </div></li>`;
+};
 V.reports = () => {
   const f = S.feed, mine = f ? f.filter(r => r.mine) : [];
+  const cf = S.cf || 'all', rec = (f || []).filter(r => Date.now() - r.t < 3 * 36e5), ry = rec.filter(r => r.has).length, rn = rec.length - ry;
+  const shown = f ? f.filter(r => cf === 'all' || (cf === 'yes' ? r.has : !r.has)) : [];
+  const summary = f && f.length ? `<div class="fd-sum" aria-label="Last 3 hours"><div><b class="num" data-count="${rec.length}" data-key="fd-t">${rec.length}</b><span>reports in 3 hr</span></div><div class="fd-s-y"><b class="num" data-count="${ry}" data-key="fd-y">${ry}</b><span>say water</span></div><div class="fd-s-n"><b class="num" data-count="${rn}" data-key="fd-n">${rn}</b><span>say no water</span></div></div>
+    <div class="chips fd-chips" role="group" aria-label="Filter reports">${[['all', 'All', f.length], ['yes', 'Has water', f.filter(r => r.has).length], ['no', 'No water', f.filter(r => !r.has).length]].map(c => `<button class="chipb ${cf === c[0] ? 'on' : ''}" data-act="cfilt" data-p="${c[0]}" aria-pressed="${cf === c[0]}">${c[0] === 'yes' ? gauge('available', 13) : c[0] === 'no' ? gauge('out', 13) : ''}${c[1]} <span class="num fd-n">${c[2]}</span></button>`).join('')}</div>` : '';
   const list = S.repTab === 'recent'
-    ? (f === null ? skRows(4) : f.length ? `<ul class="feed">${f.map(feedItem).join('')}</ul>` : empty('No reports yet', 'Be the first to tell others what you see at a station.'))
-    : `<h3 class="sub-h">Water status reports</h3>${mine.length ? `<ul class="feed">${mine.map(feedItem).join('')}</ul>` : '<p class="muted pad">You have not reported water status yet.</p>'}
+    ? (f === null ? skRows(4) : f.length ? `${summary}${shown.length ? `<ul class="fd-list">${shown.map((r, i) => feedItem(r, i, true)).join('')}</ul>` : empty('Nothing here', 'No reports match this filter right now.')}` : empty('No reports yet', 'Be the first to tell others what you see at a station.'))
+    : `<h3 class="sub-h">Water status reports</h3>${mine.length ? `<ul class="feed">${mine.map((r, i) => feedItem(r, i, true)).join('')}</ul>` : '<p class="muted pad">You have not reported water status yet.</p>'}
        <h3 class="sub-h">Incorrect information reports</h3>${S.mineIssues === null ? skRows(3) : S.mineIssues.length ? `<ul class="feed">${S.mineIssues.map(r => `<li class="fitem"><span class="f-g">${ico('flag', 18)}</span><div><p><a href="#/station/${r.sid}"><b>${esc(r.station)}</b></a> ${rtag(r.status)}</p><p>${esc(r.type)}</p>${r.note ? `<p class="f-note">${esc(r.note)}</p>` : ''}${r.adminNote ? `<p class="f-note admin-note"><b>Admin:</b> ${esc(r.adminNote)}</p>` : ''}<p class="muted">Sent ${ago(r.t)}${r.upd ? ' · updated ' + ago(r.upd) : ''}</p></div></li>`).join('')}</ul>` : '<p class="muted pad">You have not reported incorrect information.</p>'}
        <h3 class="sub-h">My reviews</h3>${S.myRevs === null ? skRows(2) : S.myRevs.length ? `<ul class="feed">${S.myRevs.map(r => `<li class="fitem"><span class="f-g">${ico('star', 18, true)}</span><div><p><a href="#/station/${r.sid}"><b>${esc(r.station)}</b></a> ${stars(r.rating, 13)}${r.status === 'hidden' ? ' <span class="tag rs-rejected">Hidden by moderator</span>' : ''}</p>${r.comment ? `<p class="f-note">${esc(r.comment)}</p>` : ''}<p class="muted">${ago(r.t)}</p></div></li>`).join('')}</ul>` : '<p class="muted pad">You have not reviewed a station yet. Open a station to rate it.</p>'}`;
+  (f || []).forEach(r => FEED_SEEN.add(r.id));
   return `<div class="page">${pageHead('Community reports', 'Short, time-stamped reports from people who were just there.')}
   <div class="rep-grid"><section class="rep-form" aria-label="Report water status"><h2>Report water status</h2><p class="muted">Reports count for 3 hours. One report per station every 10 minutes.</p>${waterForm('rp', byDist(ST)[0]?.id)}</section>
   <section aria-label="Reports"><div class="tabs" role="tablist"><button role="tab" class="tab ${S.repTab === 'recent' ? 'on' : ''}" aria-selected="${S.repTab === 'recent'}" data-act="reptab" data-p="recent">Recent reports</button><button role="tab" class="tab ${S.repTab === 'mine' ? 'on' : ''}" aria-selected="${S.repTab === 'mine'}" data-act="reptab" data-p="mine">My history</button></div>${list}</section></div></div>`;
 };
 
 /* ---------- Saved ---------- */
+const SV_SEEN = new Set();
+const savedCard = (s, i, fresh) => `<li class="sv-card st-${s.status}${fresh && !SV_SEEN.has(s.id) ? ' in' : ''}" style="--i:${Math.min(i, 9)}">
+  <span class="sv-ic" aria-hidden="true">${gauge(s.status, 24)}</span>
+  <div class="sv-body">
+    <div class="sv-top"><a class="sv-name" href="#/station/${s.id}">${esc(s.name)}</a>${chip(s)}</div>
+    <p class="sv-addr muted">${esc(s.addr)}</p>
+    <div class="sv-meta"><span>${ico('pin', 13)} <b class="num">${dm(s)}</b></span><span>${ico('clock', 13)} ${hrs(s)}</span><span class="muted">Updated ${ago(s.upd)}</span></div>
+  </div>
+  <div class="sv-act"><a class="btn sm outline" href="#/station/${s.id}">Details</a><button class="btn sm quiet danger" data-act="rm" data-id="${s.id}" aria-label="Remove ${esc(s.name)} from saved">${ico('trash', 14)}<span>Remove</span></button></div>
+</li>`;
 V.saved = () => {
-  const l = byDist(ST.filter(s => isSv(s.id)));
-  return `<div class="page">${pageHead('Saved stations', `${l.length} saved. Availability is the latest official status.`, locSelect('loc4'))}
-  ${l.length ? `<div class="slist">${rowHead()}${l.map(s => row(s, { rm: 1 })).join('')}</div>` : empty('No saved stations yet', 'Tap the heart on any station to keep it here.', '<a class="btn outline sm" href="#/stations">Browse stations</a>')}
+  const l = byDist(ST.filter(s => isSv(s.id))), n = k => l.filter(s => s.status === k).length;
+  const html = `<div class="page sv${l.length ? ' sv-has' : ''}">${pageHead('Saved stations', `${l.length} saved. Availability is the latest official status.`, locSelect('loc4'))}
+  ${l.length ? `<div class="sv-sum" aria-label="Saved stations summary"><div class="sv-s-y"><b class="num" data-count="${n('available')}" data-key="sv-a">${n('available')}</b><span>available</span></div><div class="sv-s-l"><b class="num" data-count="${n('low')}" data-key="sv-l">${n('low')}</b><span>low supply</span></div><div class="sv-s-n"><b class="num" data-count="${n('out') + n('closed')}" data-key="sv-o">${n('out') + n('closed')}</b><span>out or closed</span></div></div>
+  <ul class="sv-list">${l.map((s, i) => savedCard(s, i, true)).join('')}</ul>` : empty('No saved stations yet', 'Tap the heart on any station to keep it here.', '<a class="btn outline sm" href="#/stations">Browse stations</a>')}
   <p class="fine">Availability can change quickly. Check the last update time before you go.</p></div>`;
+  l.forEach(s => SV_SEEN.add(s.id));
+  return html;
 };
 
-/* ---------- Notifications ---------- */
 const NF = [['all', 'All'], ['unread', 'Unread'], ['availability', 'Availability'], ['saved', 'Saved stations'], ['nearby', 'Nearby'], ['announcement', 'Announcements']];
 const nfMatch = n => S.nf === 'all' || (S.nf === 'unread' ? !n.read : S.nf === 'availability' ? nType(n) === 'availability' : nScope(n) === S.nf);
 const TYPE_L = { availability: 'Availability update', community: 'Community report', announcement: 'Announcement', info: 'Station information' };
+const NREAD = {};          // last read state shown per notification, so a card can flash when it turns read
+const N_SEEN = new Set();
+const dayLabel = t => { const d = new Date(t), n = new Date(), a = new Date(d.getFullYear(), d.getMonth(), d.getDate()), b = new Date(n.getFullYear(), n.getMonth(), n.getDate()), diff = Math.round((b - a) / 864e5); return diff <= 0 ? 'Today' : diff === 1 ? 'Yesterday' : diff < 7 ? d.toLocaleDateString([], { weekday: 'long' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); };
+const nCard = (n, i, fresh) => {
+  const s = n.sid && get(n.sid), ty = nType(n), flash = NREAD[n.id] === false && n.read, isNew = fresh && !N_SEEN.has(n.id);
+  const icon = ty === 'announcement' ? ico('megaphone', 18) : ty === 'availability' && s ? gauge(s.status, 20) : ty === 'community' ? ico('users', 18) : ico('drop', 18);
+  return `<li class="nt-card nt-${ty}${s && ty === 'availability' ? ' st-' + s.status : ''}${n.read ? ' rd' : ' un'}${isNew ? ' in' : ''}${flash ? ' flash' : ''}" style="--i:${Math.min(i, 9)}">
+    <span class="nt-ic" aria-hidden="true">${icon}</span>
+    <div class="nt-b"><p class="nt-k">${TYPE_L[ty]}${s ? ' · ' + (ty === 'announcement' ? esc(s.name) : isSv(s.id) ? 'Saved station' : 'Nearby') : ''}${n.read ? '' : '<span class="new">New</span>'}</p>
+      <p class="nt-t">${esc(ty === 'announcement' ? n.title : s ? s.name : n.title)}</p><p class="nt-x">${esc(n.body)}</p>
+      <p class="nt-f">${s ? chip(s) : ''}<span class="muted" title="${esc(dateTime(n.t))}">${ago(n.t)}</span></p>
+      ${s || !n.read ? `<div class="nt-a">${s ? `<a class="btn sm outline" href="#/station/${s.id}" data-act="nopen" data-id="${n.id}">View</a>` : ''}${n.read ? '' : `<button class="btn sm quiet" data-act="nread" data-id="${n.id}">${ico('check', 14)} Mark read</button>`}</div>` : ''}</div>
+  </li>`;
+};
 V.notifications = () => {
   const all = myN(), u = all.filter(n => !n.read).length, l = all.filter(nfMatch);
-  return `<div class="page narrow">${pageHead('Notifications', u ? `${u} unread` : 'You are up to date.', `<button class="btn outline sm" data-act="readall" ${u ? '' : 'disabled'}>Mark all as read</button>`)}
-  <div class="chips" role="group" aria-label="Filter notifications">${NF.map(c => `<button class="chipb ${S.nf === c[0] ? 'on' : ''}" data-act="nf" data-p="${c[0]}" aria-pressed="${S.nf === c[0]}">${c[1]}</button>`).join('')}</div>
-  ${l.length ? `<ul class="nlist">${l.map(n => { const s = n.sid && get(n.sid), ty = nType(n); return `<li class="nitem ${n.read ? '' : 'un'}"><span class="n-m" aria-hidden="true">${ico(ty === 'announcement' ? 'megaphone' : 'drop', 16)}</span><div class="n-b"><p class="n-k">${TYPE_L[ty]}${s ? ' · ' + (ty === 'announcement' ? esc(s.name) : isSv(s.id) ? 'Saved station' : 'Nearby') : ''}${n.read ? '' : '<span class="new">New</span>'}</p><p class="n-t">${esc(ty === 'announcement' ? n.title : s ? s.name : n.title)}</p><p class="n-x">${esc(n.body)}</p><p class="n-f">${s ? chip(s) : ''}<span class="muted">${dateTime(n.t)} · ${ago(n.t)}</span></p></div><div class="n-a">${s ? `<a class="btn sm outline" href="#/station/${s.id}" data-act="nopen" data-id="${n.id}">View</a>` : ''}${n.read ? '' : `<button class="btn sm quiet" data-act="nread" data-id="${n.id}">Mark read</button>`}</div></li>`; }).join('')}</ul>` : empty('Nothing here', S.nf === 'all' ? 'Save a station or turn on nearby updates in Account.' : 'No notifications match this filter.')}
+  const cnt = k => k === 'all' ? all.length : k === 'unread' ? u : k === 'availability' ? all.filter(n => nType(n) === 'availability').length : all.filter(n => nScope(n) === k).length;
+  let body = '', last = '';
+  l.forEach((n, i) => { const d = dayLabel(n.t); if (d !== last) { body += `${last ? '</ul>' : ''}<h2 class="nt-day">${d}</h2><ul class="nt-list">`; last = d; } body += nCard(n, i, true); });
+  const html = `<div class="page narrow nt">${pageHead('Notifications', u ? `${u} unread` : 'You are up to date.', `<button class="btn outline sm" data-act="readall" ${u ? '' : 'disabled'}>${ico('check', 14)} Mark all as read</button>`)}
+  <div class="chips nt-chips" role="group" aria-label="Filter notifications">${NF.map(c => `<button class="chipb ${S.nf === c[0] ? 'on' : ''}" data-act="nf" data-p="${c[0]}" aria-pressed="${S.nf === c[0]}">${c[1]}${cnt(c[0]) ? ` <span class="num nt-n">${cnt(c[0])}</span>` : ''}</button>`).join('')}</div>
+  ${l.length ? body + '</ul>' : empty('Nothing here', S.nf === 'all' ? 'Save a station or turn on nearby updates in Account.' : 'No notifications match this filter.')}
   <p class="fine">Updates come from station admins and community reports. Change what you receive in <a href="#/account">Account</a>.</p></div>`;
+  all.forEach(n => { NREAD[n.id] = !!n.read; N_SEEN.add(n.id); });
+  return html;
 };
 
 /* ---------- Account ---------- */
