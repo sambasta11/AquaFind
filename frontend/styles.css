@@ -1821,3 +1821,24 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 @media(prefers-reduced-motion:reduce){
   .is-auth .auth-hero b .w1,.is-auth .auth-hero b .w2,.is-auth .auth-hero>span:last-of-type em,.is-auth .auth-hero b::after{animation:none!important;opacity:1;transform:none}
 }
+
+/* ---------- Sign-in motion polish: calmer logo, intro plays once ---------- */
+.is-auth .auth-logo{animation:logoIn 1s cubic-bezier(.2,.8,.2,1) both,logoFloat 9s ease-in-out 1.1s infinite,logoGlow 7s ease-in-out 1.1s infinite}
+.is-auth .auth-logo::after{animation:logoShine2 14s ease-in-out 3s infinite}
+.is-auth .auth-logo .auth-ring{animation:ringSoft 8s cubic-bezier(.25,.6,.3,1) 1.6s infinite}
+.is-auth .auth-logo .auth-ring.r2{animation-delay:4.3s}
+.is-auth .auth-logo .auth-ring.r3{animation-delay:7s}
+@keyframes ringSoft{0%{opacity:.4;transform:scale(1)}70%{opacity:0}100%{opacity:0;transform:scale(1.8)}}
+
+/* repeat visit (flag set by the script in index.html): skip entrance, keep calm idle motion */
+.no-intro .is-auth .auth-logo{animation:logoFloat 9s ease-in-out infinite,logoGlow 7s ease-in-out infinite}
+.no-intro .is-auth .auth-hero b{animation:none}
+.no-intro .is-auth .auth-hero b .w1{animation:wBumpL 7s ease-in-out 2.4s infinite,aquaSheen 7s ease-in-out 2.4s infinite}
+.no-intro .is-auth .auth-hero b .w2{animation:wBumpR 7s ease-in-out 2.4s infinite,aquaSheen 7s ease-in-out 2.4s infinite}
+.no-intro .is-auth .auth-hero>span:last-of-type{animation:none}
+.no-intro .is-auth .auth-hero>span:last-of-type em:first-of-type{animation:tBumpL 7s ease-in-out 3s infinite}
+.no-intro .is-auth .auth-hero>span:last-of-type em+em{animation:tBumpR 7s ease-in-out 3s infinite}
+.no-intro .is-auth .auth-hero .hero-copy{animation:none}
+@media(prefers-reduced-motion:reduce){
+  .is-auth .auth-logo,.is-auth .auth-logo::after,.is-auth .auth-logo .auth-ring{animation:none!important}
+}
