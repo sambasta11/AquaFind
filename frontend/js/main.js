@@ -466,7 +466,7 @@ window.addEventListener('aqf-online', async () => {
 
 // Sign-in panel: cursor-reactive spotlight, ring and logo parallax (desktop pointers only; purely decorative)
 (() => {
-  if (!matchMedia('(hover:hover) and (pointer:fine)').matches || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
   let tx = 0.5, ty = 0.5, x = 0.5, y = 0.5, raf = 0, hero = null;
   const tick = () => {
     raf = 0;
