@@ -249,7 +249,28 @@ const A = {
   wrdel(el) { modal(`<div class="dlg-h"><h2>Remove this report?</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div><p class="muted">The report will no longer count toward the community totals. This can't be undone.</p><div class="btnrow"><button class="btn danger-solid" data-act="wrconfirm" data-id="${el.dataset.id}">Remove report</button><button class="btn quiet" data-act="close">Cancel</button></div>`, 'Remove report'); },
   async wrconfirm(el) { try { await api('DELETE', '/water-reports/' + el.dataset.id); S.ad.wr = S.ad.wr.filter(r => r.id != el.dataset.id); closeModal(); await quickRefresh(); renderKeep(); toast('Report removed', 'ok'); } catch (e) { fail(e); } }
 };
+const signInLogoMotions = new WeakMap();
 document.addEventListener('click', e => {
+  const logo = e.target.closest('.auth-logo');
+  if (logo && document.body.classList.contains('is-auth')) {
+    const svg = logo.querySelector('.logo-live');
+    const upper = svg && svg.querySelector('.hl-full path:first-child');
+    const lower = svg && svg.querySelector('.hl-full path:last-child');
+    if (upper && lower && typeof upper.animate === 'function' && typeof lower.animate === 'function') {
+      signInLogoMotions.get(svg)?.forEach(animation => animation.cancel());
+      const options = { duration: 760, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'none' };
+      const animations = [upper.animate([
+        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 100%' },
+        { transform: 'translateY(-10px) rotate(-3deg)', transformBox: 'fill-box', transformOrigin: '50% 100%', offset: 0.42 },
+        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 100%' }
+      ], options), lower.animate([
+        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 0%' },
+        { transform: 'translateY(12px) rotate(2.5deg)', transformBox: 'fill-box', transformOrigin: '50% 0%', offset: 0.42 },
+        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 0%' }
+      ], options)];
+      signInLogoMotions.set(svg, animations);
+    }
+  }
   const el = e.target.closest('[data-act]');
   if (!e.target.closest('.acct')) closeMenu();
   const fn = el && (A[el.dataset.act] || SAA[el.dataset.act]); if (fn) fn(el, e);
