@@ -1739,3 +1739,29 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 @media not all{
   #app::before,#app::after,.is-auth .auth::before,.is-auth .auth::after{animation:none!important}
 }
+
+/* =====================================================================
+   Wordmark + tagline (sign-in / sign-up hero). Paste at the very END of styles.css.
+   The name fades in, then gives a small, gentle shake every few seconds.
+   ===================================================================== */
+.auth-hero b.wm{animation:none!important;display:block;text-align:center;background:none;-webkit-text-fill-color:initial;overflow:visible}
+.auth-hero b.wm i{font-style:normal;display:inline-block;color:#fff;
+  animation:wmIn .7s ease-out calc(.45s + var(--i)*50ms) both,
+            wmShake 5s ease-in-out calc(2s + var(--i)*35ms) infinite}
+@media(min-width:900px){
+  .is-auth .auth-hero b.wm i{background:linear-gradient(180deg,#fff 30%,#BFE9FF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+}
+@keyframes wmIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+/* a short, soft shake (about 0.7s) followed by a long rest */
+@keyframes wmShake{
+  0%,16%,100%{translate:0 0;rotate:0deg}
+  2%{translate:-1.5px 0;rotate:-1.2deg}4%{translate:1.5px -.5px;rotate:1.2deg}
+  6%{translate:-1.2px .5px;rotate:-.9deg}8%{translate:1.2px 0;rotate:.9deg}
+  10%{translate:-.7px 0;rotate:-.5deg}12%{translate:.7px 0;rotate:.5deg}14%{translate:-.3px 0;rotate:0deg}
+}
+.auth-hero b.wm::after{animation-delay:1s}
+.auth-hero>span.wm-tag{animation:wmTagIn .8s ease-out 1s both}
+@keyframes wmTagIn{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .auth-hero b.wm i,.auth-hero>span.wm-tag{animation:none!important;opacity:1}
+}
