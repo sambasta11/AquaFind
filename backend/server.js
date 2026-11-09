@@ -52,7 +52,7 @@ const REAL_STATIONS = [
   ['Golden Horizon Purified Water Station', 9.7860127, 125.4987676],
   ['VIVAPURE Purified Drinking Water Refilling Station', 9.7820600, 125.4851200],
   ['Water-Aide Water Refilling Station', 9.7876800, 125.4943900],
-  ['Aquablue Water Refilling Station and Supplies', 9.7798300, 125.5027500],
+  ['Aquablue Water Refilling Station and Supplies', 9.757131, 125.513763],
   ['Fhrence Water Station', 9.7903288, 125.4823235],
   ['Watershed Gem Purified Water', 9.7910673, 125.4909948],
   ['WATER ICE Refilling Station', 9.7580224, 125.4869450],
