@@ -14,7 +14,7 @@ let AD_LAST = '', AD_FRESH = true;      // animate a section only when you arriv
 const CU = {};                          // last shown value per counter, so a refresh counts from the old number
 new MutationObserver(() => document.querySelectorAll('[data-count]:not([data-cu])').forEach(el => {
   el.dataset.cu = 1; const to = +el.dataset.count, k = el.dataset.key, from = CU[k] ?? 0; CU[k] = to;
-  if (from === to || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  if (from === to) return;
   const t0 = performance.now(), d = 900; el.textContent = from;
   const step = t => { const p = Math.min(1, (t - t0) / d); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
