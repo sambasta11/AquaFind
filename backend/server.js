@@ -9,6 +9,22 @@ const { pool, run, all, get, tx, applySchema } = require('./db');   // exits wit
 const PORT = process.env.PORT || 3000;
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 const PROD = process.env.NODE_ENV === 'production';
+
+// Breached-password check (Have I Been Pwned range API, k-anonymity: only the first 5 chars of the SHA-1 leave the server).
+// On in production, off elsewhere (set PWNED_CHECK=1/0 to override). Fails open if the service is unreachable.
+const PWNED_ON = process.env.PWNED_CHECK ? process.env.PWNED_CHECK === '1' : PROD;
+const COMMON_PW = new Set(['password', 'password1', '123456', '1234567', '12345678', '123456789', 'qwerty', 'qwerty123', 'abc123', 'iloveyou', 'admin123', 'user123', 'letmein', 'welcome1', 'aquafind', 'aquafind123']);
+async function isWeakPassword(pw) {
+  if (COMMON_PW.has(pw.toLowerCase())) return true;
+  if (!PWNED_ON) return false;
+  try {
+    const h = crypto.createHash('sha1').update(pw).digest('hex').toUpperCase(), pre = h.slice(0, 5), suf = h.slice(5);
+    const r = await fetch('https://api.pwnedpasswords.com/range/' + pre, { headers: { 'Add-Padding': 'true' }, signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return false;
+    return (await r.text()).split('\n').some(l => { const [s2, n] = l.trim().split(':'); return s2 === suf && Number(n) > 0; });
+  } catch { return false; }
+}
+const WEAK_MSG = 'That password has appeared in a known data breach. Please choose a different one.';
 const CORS_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim().replace(/\/+$/, '')).filter(Boolean);
 const DEV_SECRET = 'aquafind-dev-secret-change-me';
 const SECRET = process.env.JWT_SECRET || DEV_SECRET;
@@ -255,6 +271,7 @@ app.post('/api/auth/register', ah(async (req, res) => {
   if (name.trim().length < 2) return res.status(400).json({ error: 'Enter your full name.' });
   if (!EMAIL.test(e)) return res.status(400).json({ error: 'Enter a valid email address.' });
   if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  if (await isWeakPassword(password)) return res.status(400).json({ error: WEAK_MSG });
   if (await get('SELECT 1 AS x FROM users WHERE email=?', e)) return res.status(409).json({ error: 'An account with this email already exists.' });
   let u;
   try { u = (await run('INSERT INTO users (full_name,email,password_hash,created_at) VALUES (?,?,?,?) RETURNING *', name.trim(), e, bcrypt.hashSync(password, 10), Date.now())).rows[0]; }
@@ -379,6 +396,7 @@ app.put('/api/me/password', auth, ah(async (req, res) => {
   if (!req.user.password_hash) return res.status(400).json({ error: 'This account signs in with Google or Facebook, so it has no AquaFind password.' });
   if (!bcrypt.compareSync(current, req.user.password_hash)) return res.status(400).json({ error: 'Current password is incorrect.' });
   if (next.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+  if (await isWeakPassword(next)) return res.status(400).json({ error: WEAK_MSG });
   await run('UPDATE users SET password_hash=? WHERE user_id=?', bcrypt.hashSync(next, 10), req.user.user_id);
   res.json({ ok: true });
 }));
