@@ -1,3 +1,4 @@
+@font-face{font-family:'GFS Baskerville';src:url(fonts/gfs-baskerville-latin.woff) format('woff');font-weight:400;font-display:swap}
 /* AquaFind design system. Survey-sheet identity: paper ground, ink rules, square corners, tank-gauge status glyphs. */
 @font-face{font-family:Manrope;src:url(fonts/manrope-latin-wght-normal.woff2) format('woff2');font-weight:200 800;font-display:swap}
 @font-face{font-family:Inter;src:url(fonts/inter-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap}
@@ -1043,7 +1044,7 @@ a.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
 
 /* ---------- Sign-in hero v8: serif tagline + light body copy ---------- */
 @media(min-width:900px){
-  .is-auth .auth-hero>span:last-of-type{font:400 40px/1.15 Georgia,'Times New Roman',serif;letter-spacing:.005em;max-width:none;margin-top:8px;background:linear-gradient(180deg,#fff 25%,#9ADDFB);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .is-auth .auth-hero>span:last-of-type{font:400 40px/1.15 'GFS Baskerville',Georgia,'Times New Roman',serif;letter-spacing:.005em;max-width:none;margin-top:8px;background:linear-gradient(180deg,#fff 25%,#9ADDFB);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .is-auth .auth-hero .hero-copy{font:300 18px/1.85 var(--ui);letter-spacing:.025em;max-width:36ch;margin-top:22px;color:rgba(255,255,255,.8)}
 }
 @media(min-width:900px) and (max-height:820px){
