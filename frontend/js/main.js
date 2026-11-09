@@ -249,26 +249,100 @@ const A = {
   wrdel(el) { modal(`<div class="dlg-h"><h2>Remove this report?</h2><button class="icon-btn dlg-x" data-act="close" aria-label="Close">${ico('x', 18)}</button></div><p class="muted">The report will no longer count toward the community totals. This can't be undone.</p><div class="btnrow"><button class="btn danger-solid" data-act="wrconfirm" data-id="${el.dataset.id}">Remove report</button><button class="btn quiet" data-act="close">Cancel</button></div>`, 'Remove report'); },
   async wrconfirm(el) { try { await api('DELETE', '/water-reports/' + el.dataset.id); S.ad.wr = S.ad.wr.filter(r => r.id != el.dataset.id); closeModal(); await quickRefresh(); renderKeep(); toast('Report removed', 'ok'); } catch (e) { fail(e); } }
 };
-const signInLogoMotions = new WeakMap();
+/* Sign-in logo click: the mark tears into its upper part (the "A" peak) and lower part (the wave). A few drops fall
+   as the water parts, the halves swing back and collide, the mark flashes silver, and water sprinkles up and out.
+   Lightweight: 4 Web Animations + ONE temporary canvas (removed afterwards), ignored while already playing. */
+const signInLogoBusy = new WeakSet();
+function logoSplitCollide(logo, svg, upper, lower, done) {
+  const DUR = 1000, HIT = 640, END = HIT + 1250;
+  let over = false;
+  const finish = () => { if (over) return; over = true; cv && cv.remove(); done(); };
+  upper.style.transformBox = 'fill-box'; upper.style.transformOrigin = '50% 100%';
+  lower.style.transformBox = 'fill-box'; lower.style.transformOrigin = '50% 0%';
+  const o = { duration: DUR, fill: 'none' };
+  // apart (ease-out, slight tilt) -> hang -> accelerate together -> impact -> rebound -> settle
+  upper.animate([
+    { translate: '0px 0px', rotate: '0deg', easing: 'cubic-bezier(.2,.8,.3,1)' },
+    { translate: '-6px -18px', rotate: '-9deg', offset: 0.36, easing: 'ease-in-out' },
+    { translate: '-6px -18px', rotate: '-9deg', offset: 0.46, easing: 'cubic-bezier(.6,0,.9,.4)' },
+    { translate: '0px 2px', rotate: '1.5deg', offset: 0.64, easing: 'ease-out' },
+    { translate: '0px -1px', rotate: '-.5deg', offset: 0.78, easing: 'ease-in-out' },
+    { translate: '0px 0px', rotate: '0deg' }
+  ], o);
+  lower.animate([
+    { translate: '0px 0px', rotate: '0deg', easing: 'cubic-bezier(.2,.8,.3,1)' },
+    { translate: '6px 18px', rotate: '7deg', offset: 0.36, easing: 'ease-in-out' },
+    { translate: '6px 18px', rotate: '7deg', offset: 0.46, easing: 'cubic-bezier(.6,0,.9,.4)' },
+    { translate: '0px -2px', rotate: '-1.2deg', offset: 0.64, easing: 'ease-out' },
+    { translate: '0px 1px', rotate: '.4deg', offset: 0.78, easing: 'ease-in-out' },
+    { translate: '0px 0px', rotate: '0deg' }
+  ], o);
+  // impact: pop + silver glow (the whole mark turns brushed silver, then the colour flows back)
+  const S0 = 'drop-shadow(0 0 0 rgba(226,232,240,0)) drop-shadow(0 0 0 rgba(203,213,225,0)) grayscale(0) brightness(1)';
+  const S1 = 'drop-shadow(0 0 6px rgba(240,245,252,.95)) drop-shadow(0 0 16px rgba(203,213,225,.75)) grayscale(.9) brightness(1.75)';
+  const S2 = 'drop-shadow(0 0 5px rgba(226,232,240,.5)) drop-shadow(0 0 10px rgba(203,213,225,.35)) grayscale(.45) brightness(1.3)';
+  svg.animate([
+    { scale: '1', filter: S0 }, { scale: '1', filter: S0, offset: 0.62 },
+    { scale: '1.14', filter: S1, offset: 0.68, easing: 'ease-out' },
+    { scale: '1', filter: S2, offset: 0.8 }, { scale: '1', filter: S0 }
+  ], { duration: 1500, fill: 'none' });
+
+  // water: one canvas, drops under gravity, impact flash, shock ring, silver sparkles
+  var cv = document.createElement('canvas'), ctx = cv.getContext && cv.getContext('2d');
+  if (!ctx) { setTimeout(finish, DUR); return; }
+  const PAD = 90, lr = logo.getBoundingClientRect(), sr = svg.getBoundingClientRect();
+  const W = lr.width + PAD * 2, H = lr.height + PAD * 2, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  cv.style.cssText = `position:absolute;left:${-PAD}px;top:${-PAD}px;width:${W}px;height:${H}px;pointer-events:none;z-index:3`;
+  cv.setAttribute('aria-hidden', 'true');
+  ctx.scale(dpr, dpr); logo.appendChild(cv);
+  const cx = sr.left - lr.left + sr.width / 2 + PAD, cy = sr.top - lr.top + sr.height * 0.6 + PAD, w = sr.width;
+  const rnd = (a, b) => a + Math.random() * (b - a), G = 720, P = [];
+  const drop = (ts, x, y, ang, sp, r, life) => P.push({ ts, x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, r, life });
+  for (let i = 0; i < 8; i++) drop(60 + rnd(0, 120), cx + rnd(-0.3, 0.3) * w, cy + rnd(-0.04, 0.04) * w, Math.PI / 2 + rnd(-1.2, 1.2), rnd(10, 70), rnd(1.1, 2.4), rnd(450, 700));      // water parts
+  for (let i = 0; i < 28; i++) drop(HIT + rnd(0, 40), cx + rnd(-0.38, 0.38) * w, cy + rnd(-0.05, 0.05) * w, -Math.PI / 2 + rnd(-1, 1) * 1.3, rnd(120, 340), rnd(1.4, 4), rnd(700, 1150)); // sprinkle
+  const stars = Array.from({ length: 6 }, () => ({ ts: HIT + rnd(0, 160), x: cx + rnd(-0.55, 0.55) * w, y: cy + rnd(-0.6, 0.3) * w, r: rnd(3, 6.5), life: rnd(380, 560) }));
+  const star = (x, y, r) => { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, d = i % 2 ? r * 0.28 : r; ctx.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); } ctx.closePath(); ctx.fill(); };
+  const t0 = performance.now();
+  const frame = (now) => {
+    if (over) return;
+    const t = now - t0; ctx.clearRect(0, 0, W, H);
+    const k = t - HIT;
+    if (k > 0 && k < 520) {   // silver impact flash + shock ring
+      const f = 1 - k / 520, g = ctx.createRadialGradient(cx, cy, 0, cx, cy, w * 0.75);
+      g.addColorStop(0, `rgba(248,250,253,${(0.85 * f).toFixed(3)})`); g.addColorStop(0.45, `rgba(203,213,225,${(0.4 * f).toFixed(3)})`); g.addColorStop(1, 'rgba(203,213,225,0)');
+      ctx.fillStyle = g; ctx.fillRect(cx - w, cy - w, w * 2, w * 2);
+      ctx.strokeStyle = `rgba(226,232,240,${(0.7 * f).toFixed(3)})`; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(cx, cy, w * (0.1 + 0.85 * (1 - f)), w * (0.04 + 0.3 * (1 - f)), 0, 0, 6.2832); ctx.stroke();
+    }
+    for (const s of stars) {   // silver sparkles
+      const a = (t - s.ts) / s.life; if (a < 0 || a > 1) continue;
+      ctx.fillStyle = `rgba(241,245,249,${(Math.sin(a * Math.PI)).toFixed(3)})`; star(s.x, s.y, s.r * (0.5 + Math.sin(a * Math.PI) * 0.7));
+    }
+    for (const d of P) {   // water drops: ballistic motion, stretched along their velocity
+      const age = (t - d.ts) / 1000; if (age < 0 || age * 1000 > d.life) continue;
+      const u = age * 1000 / d.life, vy = d.vy + G * age, x = d.x + d.vx * age, y = d.y + d.vy * age + 0.5 * G * age * age;
+      const al = Math.min(1, u * 14) * (u > 0.7 ? (1 - u) / 0.3 : 1);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(vy, d.vx) - Math.PI / 2);
+      ctx.fillStyle = `rgba(150,225,250,${(0.9 * al).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(0, 0, d.r, d.r * 1.45, 0, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${(0.9 * al).toFixed(3)})`; ctx.beginPath(); ctx.arc(-d.r * 0.3, -d.r * 0.4, d.r * 0.38, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
+    if (t < END && logo.isConnected) requestAnimationFrame(frame); else finish();
+  };
+  requestAnimationFrame(frame);
+  setTimeout(finish, END + 1500);   // safety net (e.g. tab hidden)
+}
 document.addEventListener('click', e => {
   const logo = e.target.closest('.auth-logo');
-  if (logo && document.body.classList.contains('is-auth')) {
+  if (logo && logo.closest('.is-auth')) {
     const svg = logo.querySelector('.logo-live');
     const upper = svg && svg.querySelector('.hl-full path:first-child');
     const lower = svg && svg.querySelector('.hl-full path:last-child');
-    if (upper && lower && typeof upper.animate === 'function' && typeof lower.animate === 'function') {
-      signInLogoMotions.get(svg)?.forEach(animation => animation.cancel());
-      const options = { duration: 760, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'none' };
-      const animations = [upper.animate([
-        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 100%' },
-        { transform: 'translateY(-10px) rotate(-3deg)', transformBox: 'fill-box', transformOrigin: '50% 100%', offset: 0.42 },
-        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 100%' }
-      ], options), lower.animate([
-        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 0%' },
-        { transform: 'translateY(12px) rotate(2.5deg)', transformBox: 'fill-box', transformOrigin: '50% 0%', offset: 0.42 },
-        { transform: 'translateY(0px) rotate(0deg)', transformBox: 'fill-box', transformOrigin: '50% 0%' }
-      ], options)];
-      signInLogoMotions.set(svg, animations);
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!calm && upper && lower && !signInLogoBusy.has(svg) && typeof upper.animate === 'function') {
+      signInLogoBusy.add(svg);
+      logoSplitCollide(logo, svg, upper, lower, () => signInLogoBusy.delete(svg));
     }
   }
   const el = e.target.closest('[data-act]');
@@ -523,105 +597,4 @@ window.addEventListener('aqf-online', async () => {
       document.body.appendChild(b);
     }
   }, { passive: true });
-})();
-
-/* Sign-in logo, realistic click: the glass tile is pressed in and tilts away from the finger, then springs back with a
-   damped bounce while ripples spread across the water and droplets fly up and fall under gravity. */
-(() => {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  // damped spring displacement: starts at d with velocity v, settles to 0 with a few decaying overshoots
-  const spr = (t, d, v = 0, w = 15, z = 0.3) => {
-    const wd = w * Math.sqrt(1 - z * z), k = z * w;
-    return Math.exp(-k * t) * (d * Math.cos(wd * t) + ((v + k * d) / wd) * Math.sin(wd * t));
-  };
-  const frames = (n, dur, fn) => Array.from({ length: n }, (_, i) => fn(i / (n - 1) * dur / 1000, i / (n - 1)));
-  const at = (logo, e) => {
-    const r = logo.getBoundingClientRect();
-    return {
-      nx: clamp(((e.clientX - r.left) / r.width - 0.5) * 2, -1, 1), ny: clamp(((e.clientY - r.top) / r.height - 0.5) * 2, -1, 1),
-      x: clamp(e.clientX - r.left, 0, r.width), y: clamp(e.clientY - r.top, 0, r.height)
-    };
-  };
-  const tilt = (logo, p) => {   // press the top edge and the top tips away; press the right edge and the right side dips
-    const m = Math.min(1, Math.hypot(p.nx, p.ny));
-    logo.style.rotate = m < 0.06 ? '1 0 0 0deg' : `${(-p.ny).toFixed(3)} ${p.nx.toFixed(3)} 0 ${(16 * m).toFixed(1)}deg`;
-  };
-  const add = (logo, cls, css) => { const el = document.createElement('i'); el.className = cls; if (css) el.style.cssText = css; logo.appendChild(el); return el; };
-  const ripple = (logo, p, n) => {
-    for (let i = 0; i < n; i++) {
-      const r = add(logo, 'logo-rip', `left:${p.x}px;top:${p.y}px`);
-      r.animate([
-        { opacity: 0.8, transform: 'translate(-50%,-50%) scale(.12)' },
-        { opacity: 0.35, transform: 'translate(-50%,-50%) scale(.6)', offset: 0.45 },
-        { opacity: 0, transform: 'translate(-50%,-50%) scale(1.15)' }
-      ], { duration: 1100 + i * 220, delay: i * 140, easing: 'cubic-bezier(.15,.6,.3,1)', fill: 'both' }).onfinish = () => r.remove();
-    }
-  };
-  const flash = (logo, p) => {
-    const f = add(logo, 'logo-flash');
-    f.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px,rgba(255,255,255,.6),rgba(125,225,255,.28) 30%,transparent 62%)`;
-    f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: 'ease-out', fill: 'both' }).onfinish = () => f.remove();
-  };
-  const splash = (logo, p, power) => {   // droplets: launched upward in a fan, then ballistic motion (gravity) while fading
-    const n = 9 + Math.round(Math.random() * 4);
-    for (let i = 0; i < n; i++) {
-      const w = 3 + Math.random() * 5.5, ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1;
-      const sp = (110 + Math.random() * 190) * power, vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp, g = 640, T = 0.55 + Math.random() * 0.4;
-      const d = add(logo, 'logo-drop', `left:${p.x}px;top:${p.y}px;width:${w.toFixed(1)}px;height:${(w * 1.3).toFixed(1)}px`);
-      d.animate(frames(16, T * 1000, (t, k) => {
-        const rot = Math.atan2(vy + g * t, vx) * 180 / Math.PI - 90;
-        return { opacity: k < 0.08 ? k / 0.08 : k > 0.72 ? Math.max(0, (1 - k) / 0.28) : 1,
-          transform: `translate(${(vx * t).toFixed(1)}px,${(vy * t + 0.5 * g * t * t).toFixed(1)}px) translate(-50%,-50%) rotate(${rot.toFixed(0)}deg) scale(${(1 - 0.35 * k).toFixed(2)})` };
-      }), { duration: T * 1000, easing: 'linear', fill: 'both' }).onfinish = () => d.remove();
-    }
-  };
-  const surge = (logo) => {   // the wave in the mark surges and the peak pops
-    logo.classList.remove('is-splash'); void logo.offsetWidth; logo.classList.add('is-splash');
-    clearTimeout(logo._st); logo._st = setTimeout(() => logo.classList.remove('is-splash'), 1050);
-  };
-
-  let h = null;
-  document.addEventListener('pointerdown', (e) => {
-    if (e.button > 0 || reduce.matches) return;
-    const logo = e.target.closest?.('.auth-logo'); if (!logo) return;
-    if (logo._rel) {   // pressed again mid-bounce: carry on from wherever it currently is
-      const cs = getComputedStyle(logo), sc = cs.scale, ro = cs.rotate;
-      logo._rel.forEach((a) => a.cancel()); logo._rel = null;
-      logo.style.transition = 'none'; logo.style.scale = sc; logo.style.rotate = ro; void logo.offsetWidth; logo.style.transition = '';
-    }
-    const p = at(logo, e), mark = logo.querySelector('.logo-live');
-    h = { logo, mark, id: e.pointerId, p, press: null };
-    logo.classList.add('is-held'); logo.style.scale = '.9'; tilt(logo, p);
-    if (mark) h.press = mark.animate([{ transform: 'none' }, { transform: 'translateY(1.5px) scale(1.06,.93)' }], { duration: 140, easing: 'ease-out', fill: 'forwards' });
-    ripple(logo, p, 1); flash(logo, p);
-  });
-  document.addEventListener('pointermove', (e) => {
-    if (!h || e.pointerId !== h.id || !h.logo.isConnected) return;
-    h.p = at(h.logo, e); tilt(h.logo, h.p);
-  }, { passive: true });
-  const release = (e) => {
-    if (!h || e.pointerId !== h.id) return;
-    const { logo, mark, press, p } = h; h = null;
-    if (!logo.isConnected) return;
-    const cs = getComputedStyle(logo), rt = cs.rotate.split(' ');
-    const d0 = Math.min((parseFloat(cs.scale) || 1) - 1, -0.06);                     // even a very quick tap gets a visible bounce
-    const ax = rt.length === 4 ? +rt[0] : 1, ay = rt.length === 4 ? +rt[1] : 0, a0 = rt.length === 4 ? parseFloat(rt[3]) || 0 : 0;
-    logo.classList.remove('is-held'); logo.style.scale = ''; logo.style.rotate = '';
-    logo.style.transitionProperty = 'translate'; setTimeout(() => { logo.style.transitionProperty = ''; }, 1200);
-    const body = logo.animate(frames(48, 1150, (t) => ({
-      scale: (1 + spr(t, d0, 3.2)).toFixed(4),
-      rotate: `${ax} ${ay} 0 ${spr(t, a0, -a0 * 5).toFixed(3)}deg`
-    })), { duration: 1150, easing: 'linear' });
-    logo._rel = [body]; body.onfinish = () => { if (logo._rel && logo._rel[0] === body) logo._rel = null; };
-    if (mark) {   // the mark lags the tile (follow-through): stretches up on release, then squashes and settles
-      const m = mark.animate(frames(52, 1300, (t) => ({
-        transform: `translateY(${spr(t, 1.5, -26, 12, 0.24).toFixed(2)}px) scale(${(1 + spr(t, 0.06, -1.7, 12, 0.24)).toFixed(4)},${(1 + spr(t, -0.07, 2.1, 12, 0.24)).toFixed(4)})`
-      })), { duration: 1300, delay: 40, easing: 'linear' });
-      m.onfinish = () => press?.cancel(); setTimeout(() => press?.cancel(), 1500);
-    }
-    ripple(logo, p, 2); splash(logo, p, 1); surge(logo);
-  };
-  addEventListener('pointerup', release);
-  addEventListener('pointercancel', release);
 })();
