@@ -249,7 +249,7 @@ function onPosErr(e) {
 }
 
 /* ---------- Toasts, modal, dropdown ---------- */
-const REDUCED = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const REDUCED = () => false; // animations always on, regardless of OS reduce-motion setting
 const outThen = (el, ms, fn) => { el.classList.add('out'); if (REDUCED()) return fn(); let done = false; const f = () => { if (!done) { done = true; fn(); } }; el.addEventListener('animationend', f, { once: true }); setTimeout(f, ms + 60); };
 function toast(t, kind = '') {
   const box = $('#toasts'); if (!box) return;
