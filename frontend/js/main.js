@@ -333,6 +333,19 @@ function logoSplitCollide(logo, svg, upper, lower, done) {
   requestAnimationFrame(frame);
   setTimeout(finish, END + 1500);   // safety net (e.g. tab hidden)
 }
+/* Wordmark under the sign-in logo: when the two halves collide (HIT = 640ms) the name gives a small shake. */
+function wordmarkSplash(hero) {
+  const letters = hero && hero.querySelectorAll('.wm i');
+  if (!letters || !letters.length || typeof letters[0].animate !== 'function') return;
+  letters.forEach((el, n) => el.animate([
+    { transform: 'translate(0,0) rotate(0deg)' },
+    { transform: 'translate(-2px,0) rotate(-2deg)', offset: 0.15 },
+    { transform: 'translate(2px,-1px) rotate(2deg)', offset: 0.35 },
+    { transform: 'translate(-1.5px,0) rotate(-1.2deg)', offset: 0.55 },
+    { transform: 'translate(1px,0) rotate(.8deg)', offset: 0.75 },
+    { transform: 'translate(0,0) rotate(0deg)' }
+  ], { duration: 520, delay: 640 + n * 20, easing: 'ease-in-out', fill: 'none' }));
+}
 document.addEventListener('click', e => {
   const logo = e.target.closest('.auth-logo');
   if (logo && logo.closest('.is-auth')) {
@@ -343,6 +356,7 @@ document.addEventListener('click', e => {
     if (!calm && upper && lower && !signInLogoBusy.has(svg) && typeof upper.animate === 'function') {
       signInLogoBusy.add(svg);
       logoSplitCollide(logo, svg, upper, lower, () => signInLogoBusy.delete(svg));
+      wordmarkSplash(logo.parentElement);
     }
   }
   const el = e.target.closest('[data-act]');
