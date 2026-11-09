@@ -493,7 +493,7 @@ window.addEventListener('aqf-online', async () => {
 (() => {
   let live = 0;
   document.addEventListener('pointerdown', e => {
-    if (e.button > 0 || live > 40) return;
+    if (e.button > 0 || live > 40 || e.target.closest?.('.auth-logo')) return;   // the sign-in logo has its own splash
     for (let i = 0; i < 5; i++) {
       const b = document.createElement('i'), s = 6 + Math.random() * 14;
       b.className = 'tap-bub';
@@ -504,14 +504,103 @@ window.addEventListener('aqf-online', async () => {
   }, { passive: true });
 })();
 
-// Sign-in logo: click it and the two halves split apart, then collide back together with a glow
+/* Sign-in logo, realistic click: the glass tile is pressed in and tilts away from the finger, then springs back with a
+   damped bounce while ripples spread across the water and droplets fly up and fall under gravity. */
 (() => {
-  let timer = 0;
-  document.addEventListener('click', (e) => {
-    const tile = e.target.closest && e.target.closest('.auth-logo');
-    if (!tile) return;
-    clearTimeout(timer);
-    tile.classList.remove('spit'); void tile.offsetWidth; tile.classList.add('spit');   // restart on every click
-    timer = setTimeout(() => tile.classList.remove("spit"), 2200);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  // damped spring displacement: starts at d with velocity v, settles to 0 with a few decaying overshoots
+  const spr = (t, d, v = 0, w = 15, z = 0.3) => {
+    const wd = w * Math.sqrt(1 - z * z), k = z * w;
+    return Math.exp(-k * t) * (d * Math.cos(wd * t) + ((v + k * d) / wd) * Math.sin(wd * t));
+  };
+  const frames = (n, dur, fn) => Array.from({ length: n }, (_, i) => fn(i / (n - 1) * dur / 1000, i / (n - 1)));
+  const at = (logo, e) => {
+    const r = logo.getBoundingClientRect();
+    return {
+      nx: clamp(((e.clientX - r.left) / r.width - 0.5) * 2, -1, 1), ny: clamp(((e.clientY - r.top) / r.height - 0.5) * 2, -1, 1),
+      x: clamp(e.clientX - r.left, 0, r.width), y: clamp(e.clientY - r.top, 0, r.height)
+    };
+  };
+  const tilt = (logo, p) => {   // press the top edge and the top tips away; press the right edge and the right side dips
+    const m = Math.min(1, Math.hypot(p.nx, p.ny));
+    logo.style.rotate = m < 0.06 ? '1 0 0 0deg' : `${(-p.ny).toFixed(3)} ${p.nx.toFixed(3)} 0 ${(16 * m).toFixed(1)}deg`;
+  };
+  const add = (logo, cls, css) => { const el = document.createElement('i'); el.className = cls; if (css) el.style.cssText = css; logo.appendChild(el); return el; };
+  const ripple = (logo, p, n) => {
+    for (let i = 0; i < n; i++) {
+      const r = add(logo, 'logo-rip', `left:${p.x}px;top:${p.y}px`);
+      r.animate([
+        { opacity: 0.8, transform: 'translate(-50%,-50%) scale(.12)' },
+        { opacity: 0.35, transform: 'translate(-50%,-50%) scale(.6)', offset: 0.45 },
+        { opacity: 0, transform: 'translate(-50%,-50%) scale(1.15)' }
+      ], { duration: 1100 + i * 220, delay: i * 140, easing: 'cubic-bezier(.15,.6,.3,1)', fill: 'both' }).onfinish = () => r.remove();
+    }
+  };
+  const flash = (logo, p) => {
+    const f = add(logo, 'logo-flash');
+    f.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px,rgba(255,255,255,.6),rgba(125,225,255,.28) 30%,transparent 62%)`;
+    f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: 'ease-out', fill: 'both' }).onfinish = () => f.remove();
+  };
+  const splash = (logo, p, power) => {   // droplets: launched upward in a fan, then ballistic motion (gravity) while fading
+    const n = 9 + Math.round(Math.random() * 4);
+    for (let i = 0; i < n; i++) {
+      const w = 3 + Math.random() * 5.5, ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1;
+      const sp = (110 + Math.random() * 190) * power, vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp, g = 640, T = 0.55 + Math.random() * 0.4;
+      const d = add(logo, 'logo-drop', `left:${p.x}px;top:${p.y}px;width:${w.toFixed(1)}px;height:${(w * 1.3).toFixed(1)}px`);
+      d.animate(frames(16, T * 1000, (t, k) => {
+        const rot = Math.atan2(vy + g * t, vx) * 180 / Math.PI - 90;
+        return { opacity: k < 0.08 ? k / 0.08 : k > 0.72 ? Math.max(0, (1 - k) / 0.28) : 1,
+          transform: `translate(${(vx * t).toFixed(1)}px,${(vy * t + 0.5 * g * t * t).toFixed(1)}px) translate(-50%,-50%) rotate(${rot.toFixed(0)}deg) scale(${(1 - 0.35 * k).toFixed(2)})` };
+      }), { duration: T * 1000, easing: 'linear', fill: 'both' }).onfinish = () => d.remove();
+    }
+  };
+  const surge = (logo) => {   // the wave in the mark surges and the peak pops
+    logo.classList.remove('is-splash'); void logo.offsetWidth; logo.classList.add('is-splash');
+    clearTimeout(logo._st); logo._st = setTimeout(() => logo.classList.remove('is-splash'), 1050);
+  };
+
+  let h = null;
+  document.addEventListener('pointerdown', (e) => {
+    if (e.button > 0 || reduce.matches) return;
+    const logo = e.target.closest?.('.auth-logo'); if (!logo) return;
+    if (logo._rel) {   // pressed again mid-bounce: carry on from wherever it currently is
+      const cs = getComputedStyle(logo), sc = cs.scale, ro = cs.rotate;
+      logo._rel.forEach((a) => a.cancel()); logo._rel = null;
+      logo.style.transition = 'none'; logo.style.scale = sc; logo.style.rotate = ro; void logo.offsetWidth; logo.style.transition = '';
+    }
+    const p = at(logo, e), mark = logo.querySelector('.logo-live');
+    h = { logo, mark, id: e.pointerId, p, press: null };
+    logo.classList.add('is-held'); logo.style.scale = '.9'; tilt(logo, p);
+    if (mark) h.press = mark.animate([{ transform: 'none' }, { transform: 'translateY(1.5px) scale(1.06,.93)' }], { duration: 140, easing: 'ease-out', fill: 'forwards' });
+    ripple(logo, p, 1); flash(logo, p);
   });
+  document.addEventListener('pointermove', (e) => {
+    if (!h || e.pointerId !== h.id || !h.logo.isConnected) return;
+    h.p = at(h.logo, e); tilt(h.logo, h.p);
+  }, { passive: true });
+  const release = (e) => {
+    if (!h || e.pointerId !== h.id) return;
+    const { logo, mark, press, p } = h; h = null;
+    if (!logo.isConnected) return;
+    const cs = getComputedStyle(logo), rt = cs.rotate.split(' ');
+    const d0 = Math.min((parseFloat(cs.scale) || 1) - 1, -0.06);                     // even a very quick tap gets a visible bounce
+    const ax = rt.length === 4 ? +rt[0] : 1, ay = rt.length === 4 ? +rt[1] : 0, a0 = rt.length === 4 ? parseFloat(rt[3]) || 0 : 0;
+    logo.classList.remove('is-held'); logo.style.scale = ''; logo.style.rotate = '';
+    logo.style.transitionProperty = 'translate'; setTimeout(() => { logo.style.transitionProperty = ''; }, 1200);
+    const body = logo.animate(frames(48, 1150, (t) => ({
+      scale: (1 + spr(t, d0, 3.2)).toFixed(4),
+      rotate: `${ax} ${ay} 0 ${spr(t, a0, -a0 * 5).toFixed(3)}deg`
+    })), { duration: 1150, easing: 'linear' });
+    logo._rel = [body]; body.onfinish = () => { if (logo._rel && logo._rel[0] === body) logo._rel = null; };
+    if (mark) {   // the mark lags the tile (follow-through): stretches up on release, then squashes and settles
+      const m = mark.animate(frames(52, 1300, (t) => ({
+        transform: `translateY(${spr(t, 1.5, -26, 12, 0.24).toFixed(2)}px) scale(${(1 + spr(t, 0.06, -1.7, 12, 0.24)).toFixed(4)},${(1 + spr(t, -0.07, 2.1, 12, 0.24)).toFixed(4)})`
+      })), { duration: 1300, delay: 40, easing: 'linear' });
+      m.onfinish = () => press?.cancel(); setTimeout(() => press?.cancel(), 1500);
+    }
+    ripple(logo, p, 2); splash(logo, p, 1); surge(logo);
+  };
+  addEventListener('pointerup', release);
+  addEventListener('pointercancel', release);
 })();
