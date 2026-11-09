@@ -503,3 +503,15 @@ window.addEventListener('aqf-online', async () => {
     }
   }, { passive: true });
 })();
+
+// Sign-in logo: click it and the two halves split apart, then collide back together with a glow
+(() => {
+  let timer = 0;
+  document.addEventListener('click', (e) => {
+    const tile = e.target.closest && e.target.closest('.auth-logo');
+    if (!tile) return;
+    clearTimeout(timer);
+    tile.classList.remove('spit'); void tile.offsetWidth; tile.classList.add('spit');   // restart on every click
+    timer = setTimeout(() => tile.classList.remove("spit"), 2200);
+  });
+})();
