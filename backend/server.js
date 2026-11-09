@@ -42,6 +42,64 @@ const SURIGAO = [
 const addNotif = (sid, title, body, kind = 'update') =>
   run('INSERT INTO notifications (station_id,title,body,created_at,kind) VALUES (?,?,?,?,?)', sid, title, body, Date.now(), kind);
 
+// ---------- Real water stations in Surigao City (one-time migration) ----------
+// Name + coordinates are the Google Maps pins supplied by the project owner. Street address, barangay, phone and hours were NOT
+// verified, so they are left blank (hours = NULL) instead of being invented. Station admins can fill them in from the app.
+const REAL_STATIONS = [
+  ['Ozone Technical Supplies and Services', 9.7865712, 125.4910611],
+  ['So Fine Water Station', 9.7902460, 125.4917420],
+  ['Aqua Fresca', 9.7823080, 125.4946861],
+  ['Golden Horizon Purified Water Station', 9.7860127, 125.4987676],
+  ['VIVAPURE Purified Drinking Water Refilling Station', 9.7820600, 125.4851200],
+  ['Water-Aide Water Refilling Station', 9.7876800, 125.4943900],
+  ['Aquablue Water Refilling Station and Supplies', 9.7798300, 125.5027500],
+  ['Fhrence Water Station', 9.7903288, 125.4823235],
+  ['Watershed Gem Purified Water', 9.7910673, 125.4909948],
+  ['WATER ICE Refilling Station', 9.7580224, 125.4869450],
+  ['Katubig Water Refilling Station', 9.7852100, 125.4878400],
+  ['Pour and Drink Water Refilling Station', 9.7825473, 125.4910625],
+  ['Eli\u2019s Spring Water Refilling Station', 9.7901468, 125.4890929],
+  ['Ella\u2019s Refilling Station', 9.7881004, 125.4874777]
+];
+const MIGRATION_KEY = 'real-surigao-stations-v1';
+const migrationDone = async () => !!(await get('SELECT 1 AS x FROM app_migrations WHERE migration_key=?', MIGRATION_KEY));
+async function migrateRealStations() {
+  if (process.env.DB_SCHEMA) return;          // the automated tests keep their own sample data
+  if (await migrationDone()) return;          // runs once, so a station deleted later never comes back
+  const fakeName = Object.fromEntries(SURIGAO.map(x => [x[0], x[1]]));
+  await tx(async q => {
+    // the original made-up sample stations (only if they are still untouched)
+    const fake = (await q('SELECT station_id, station_name FROM stations')).rows.filter(r => fakeName[r.station_id] === r.station_name).map(r => r.station_id);
+    let n = (await q("SELECT MAX(CAST(SUBSTR(station_id, 2) AS INTEGER)) AS m FROM stations WHERE station_id ~ '^s[0-9]{1,9}$'")).rows[0].m || 0;
+    const have = new Set((await q('SELECT station_name FROM stations')).rows.map(r => r.station_name.toLowerCase()));
+    const added = [];
+    for (const [name, lat, lng] of REAL_STATIONS) {
+      if (have.has(name.toLowerCase())) continue;
+      const id = 's' + (++n);
+      await q('INSERT INTO stations (station_id,station_name,address,latitude,longitude,contact_number,open_hour,close_hour) VALUES (?,?,?,?,?,?,?,?)', id, name, 'Surigao City', lat, lng, '', null, null);
+      await q('INSERT INTO availability (station_id,status,last_updated) VALUES (?,?,?)', id, 'available', Date.now());
+      added.push(id);
+    }
+    if (fake.length && added.length) {
+      // a station admin of a removed sample station keeps a working dashboard: they now manage the first real station
+      const admins = (await q("SELECT user_id FROM users WHERE role='admin' AND station_id = ANY(?)", fake)).rows;
+      for (const a of admins) await q('UPDATE users SET station_id=? WHERE user_id=?', added[0], a.user_id);
+      for (const id of fake) {
+        await q('DELETE FROM review_flags WHERE review_id IN (SELECT review_id FROM reviews WHERE station_id=?)', id);
+        await q('DELETE FROM notification_reads WHERE notification_id IN (SELECT notification_id FROM notifications WHERE station_id=?)', id);
+        for (const t of ['reviews', 'notifications', 'water_reports', 'reports', 'saved_stations', 'availability']) await q(`DELETE FROM ${t} WHERE station_id=?`, id);
+        await q("UPDATE users SET role='user', station_id=NULL WHERE station_id=?", id);
+        await q('DELETE FROM stations WHERE station_id=?', id);
+      }
+      // the made-up general advisory from the sample data
+      await q("DELETE FROM notification_reads WHERE notification_id IN (SELECT notification_id FROM notifications WHERE station_id IS NULL AND title='Water interruption advisory')");
+      await q("DELETE FROM notifications WHERE station_id IS NULL AND title='Water interruption advisory'");
+    }
+    await q('INSERT INTO app_migrations (migration_key, applied_at) VALUES (?,?) ON CONFLICT DO NOTHING', MIGRATION_KEY, Date.now());
+    console.log(`Real stations: added ${added.length}, removed ${fake.length} sample station(s).`);
+  });
+}
+
 async function initDatabase() {
   await applySchema();
   const now = Date.now(), M = 60000;
@@ -80,13 +138,14 @@ async function initDatabase() {
   const hasSuper = !!(await get("SELECT 1 AS x FROM users WHERE role='superadmin'"));
   if (!PROD && !hasSuper) await run("INSERT INTO users (full_name,email,password_hash,role,created_at) VALUES ('System Admin','super@aquafind.com',?,'superadmin',?)", bcrypt.hashSync('super123', 10), Date.now());
   if (PROD && !hasSuper) console.warn('No superadmin exists. Set SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD (10+ chars) to enable the system admin console.');
-  if (!PROD && !(await get('SELECT COUNT(*) AS c FROM water_reports')).c && (await get('SELECT COUNT(*) AS c FROM users')).c) {
+  if (!PROD && (process.env.DB_SCHEMA || !(await migrationDone())) && !(await get('SELECT COUNT(*) AS c FROM water_reports')).c && (await get('SELECT COUNT(*) AS c FROM users')).c) {
     const uid = (await get('SELECT MIN(user_id) AS u FROM users')).u;
     const insW = (sid, has, note, t) => run('INSERT INTO water_reports (station_id,user_id,has_water,note,created_at) VALUES (?,?,?,?,?)', sid, uid, has, note, t);
     await insW('s1', 1, 'Water is flowing, short line.', now - 8 * M);
     await insW('s4', 0, 'Tank was empty when I arrived.', now - 35 * M);
     await insW('s2', 1, 'Slow, but still filling.', now - 50 * M);
   }
+  await migrateRealStations();
 }
 
 // ---------- Helpers ----------
@@ -692,7 +751,7 @@ app.delete('/api/superadmin/reviews/:id', auth, superOnly, ah(async (req, res) =
 // AquaBot: uses Claude when ANTHROPIC_API_KEY is set, otherwise a built-in rule-based helper
 const kmBetween = (a, b, c, d) => { const r = x => x * Math.PI / 180, h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
 const fmtDist = k => k < 1 ? `${Math.round(k * 100) * 10} m` : `${k.toFixed(1)} km`;
-const hourOpen = s => { const h = new Date().getHours(); return s.status !== 'closed' && h >= s.o && h < s.c; };
+const hourOpen = s => { const h = new Date().getHours(); return s.o != null && s.status !== 'closed' && h >= s.o && h < s.c; };   // unknown hours (NULL) are never reported as open
 const mins = t => Math.max(1, Math.round((Date.now() - t) / 60000));
 function describe(s) {
   const c = s.yes || s.no ? ` Community (3h): ${s.yes} say water, ${s.no} say no water.` : '';
@@ -705,6 +764,7 @@ function basicReply(msg, list) {
   if (/^(hi|hello|hey)\b/.test(t)) return { reply: 'Hi! I can find the nearest station with water, check a specific station, or tell you who is open now. What do you need?', ids: [] };
   if (/report|wrong|incorrect/.test(t)) return { reply: 'To tell others if there is water, tap the + button and choose "Yes" or "No water". To flag wrong details like hours or address, open a station and tap "Report incorrect info".', ids: [] };
   if (named) return { reply: describe(named) + (named.status === 'out' || named.status === 'closed' ? ` The nearest alternative is ${by[0]?.name || 'not available right now'}.` : ''), ids: [named.id] };
+  if (/open|hours|24/.test(t) && !list.some(x => x.o != null)) return { reply: 'Opening hours are not listed for these stations yet. Open a station page or call ahead to confirm.', ids: [] };
   if (/open|hours|24/.test(t)) { const o = list.filter(hourOpen).sort((a, b) => a.d - b.d).slice(0, 4); return { reply: o.length ? 'Open right now: ' + o.map(s => `${s.name} (${fmtDist(s.d)})`).join(', ') + '.' : 'No stations are open right now.', ids: o.map(s => s.id) }; }
   if (/low/.test(t)) { const o = list.filter(s => s.status === 'low'); return { reply: o.length ? 'Low supply at: ' + o.map(s => s.name).join(', ') + '. Check before you go.' : 'No stations report low supply right now.', ids: o.map(s => s.id) }; }
   if (/out of water|no water|empty/.test(t)) { const o = list.filter(s => s.status === 'out'); return { reply: o.length ? 'Out of water: ' + o.map(s => s.name).join(', ') + '.' : 'No stations are out of water right now.', ids: o.map(s => s.id) }; }
@@ -726,7 +786,7 @@ app.post('/api/chat', auth, ah(async (req, res) => {
       .filter(m => m && ['user', 'assistant'].includes(m.role) && typeof m.text === 'string').map(m => ({ role: m.role, content: m.text.slice(0, 500) }));
     while (history.length && history[0].role !== 'user') history.shift();
     const data = list.sort((a, b) => a.d - b.d).map(s =>
-      `- ${s.name} | ${s.addr} | status: ${LABEL[s.status]} | ${fmtDist(s.d)} away | hours ${s.o}:00-${s.c}:00 | phone ${s.tel} | updated ${mins(s.upd)} min ago | community last 3h: ${s.yes} water, ${s.no} no water`).join('\n');
+      `- ${s.name} | ${s.addr} | status: ${LABEL[s.status]} | ${fmtDist(s.d)} away | hours ${s.o == null ? 'not listed' : s.o + ':00-' + s.c + ':00'} | phone ${s.tel || 'not listed'} | updated ${mins(s.upd)} min ago | community last 3h: ${s.yes} water, ${s.no} no water`).join('\n');
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal: AbortSignal.timeout(15000),
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },

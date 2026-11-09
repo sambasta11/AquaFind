@@ -136,8 +136,8 @@ const ago = t => { const m = Math.round((Date.now() - t) / M); return m < 1 ? 'j
 const clock = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const dateTime = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const fh = h => `${h % 12 || 12}:00 ${h < 12 || h == 24 ? 'AM' : 'PM'}`;
-const hrs = s => s.o == 0 && s.c == 24 ? 'Open 24 hours' : `${fh(s.o)} – ${fh(s.c)}`;
-const isOpen = s => { const h = new Date().getHours(); return s.status !== 'closed' && h >= s.o && h < s.c; };
+const hrs = s => s.o == null || s.c == null ? 'Hours not listed' : s.o == 0 && s.c == 24 ? 'Open 24 hours' : `${fh(s.o)} – ${fh(s.c)}`;
+const isOpen = s => { const h = new Date().getHours(); return s.o != null && s.c != null && s.status !== 'closed' && h >= s.o && h < s.c; };   // unknown hours are never shown as open
 const byDist = l => [...l].sort((a, b) => km(a) - km(b));
 const isSv = id => S.saved.includes(id);
 const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();

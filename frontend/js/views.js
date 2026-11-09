@@ -73,7 +73,7 @@ const mcard = () => {
   const s = S.sel && get(S.sel); if (!s) return '';
   return `<div class="mc-top"><div><h2>${esc(s.name)}</h2><p>${esc(s.addr)}</p></div><button class="icon-btn" data-act="deselect" aria-label="Close station">${ico('x', 18)}</button></div>
   <div class="mc-meta">${chip(s)}<span class="num">${dm(s)}</span><span>${hrs(s)}</span><span>Updated ${ago(s.upd)}</span></div>
-  <p class="mc-tel"><a href="tel:${esc(s.tel.replace(/\s/g, ''))}">${ico('phone', 13)} ${esc(s.tel)}</a></p>
+  ${s.tel ? `<p class="mc-tel"><a href="tel:${esc(s.tel.replace(/\s/g, ''))}">${ico('phone', 13)} ${esc(s.tel)}</a></p>` : ''}
   <div class="mc-a"><a class="btn primary sm" href="#/station/${s.id}/directions">${ico('nav', 15)} Directions</a><a class="btn outline sm" href="#/station/${s.id}">Details</a>${saveBtn(s, true)}</div>`;
 };
 V.map = () => `<div class="mapws" data-sheet="${S.sheet}">
@@ -128,7 +128,7 @@ V.detail = () => {
   <div class="d-grid"><div class="d-main">
     <section class="status-hero st-${s.status}" aria-label="Official availability"><div class="sh-g">${gauge(s.status, 44)}</div><div><p class="kicker">Official status</p><p class="sh-l">${SM[s.status].label}</p><p class="sh-c">${cap}</p></div><p class="sh-t">Updated ${clock(s.upd)}<small>${ago(s.upd)} by the station</small></p></section>
     ${bad ? `<div class="note warn"><b>${s.status === 'out' ? 'No water right now.' : 'This station is closed.'}</b><span>${alt ? `Nearest available: <a href="#/station/${alt.id}">${esc(alt.name)}</a>, ${dm(alt)} away.` : 'No other station reports water right now.'}</span></div>` : ''}
-    <dl class="facts"><div><dt>${ico('pin', 16)}Address</dt><dd>${esc(s.addr)}</dd></div><div><dt>${ico('phone', 16)}Contact</dt><dd><a href="tel:${esc(s.tel.replace(/\s/g, ''))}">${esc(s.tel)}</a></dd></div><div><dt>${ico('clock', 16)}Operating hours</dt><dd>${hrs(s)}<small>${isOpen(s) ? 'Open now' : 'Closed now'}</small></dd></div><div><dt>${ico('nav', 16)}Distance</dt><dd class="num">${dm(s)}<small>from ${esc(LC().n.split(',')[0])}</small></dd></div></dl>
+    <dl class="facts"><div><dt>${ico('pin', 16)}Address</dt><dd>${esc(s.addr)}</dd></div><div><dt>${ico('phone', 16)}Contact</dt><dd>${s.tel ? `<a href="tel:${esc(s.tel.replace(/\s/g, ''))}">${esc(s.tel)}</a>` : 'Not listed'}</dd></div><div><dt>${ico('clock', 16)}Operating hours</dt><dd>${hrs(s)}${s.o == null ? '' : `<small>${isOpen(s) ? 'Open now' : 'Closed now'}</small>`}</dd></div><div><dt>${ico('nav', 16)}Distance</dt><dd class="num">${dm(s)}<small>from ${esc(LC().n.split(',')[0])}</small></dd></div></dl>
     ${water(s)}${reviewsSection(s)}</div>
   <aside class="d-side"><div id="minimap" class="mapbox mini"></div><div class="btnstack"><a class="btn primary" href="#/station/${s.id}/directions">${ico('nav', 16)} Get directions</a><button class="btn outline" data-act="report">${ico('flag', 16)} Report incorrect info</button></div></aside></div></div>`;
 };
