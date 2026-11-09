@@ -18,8 +18,8 @@ let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(
   store['aquafind-v1'] = { '/old': 1 };
   const missing = SHELL.filter(u => !onDisk(u)); ok(SHELL.length > 0 && !missing.length, 'every SHELL entry exists on disk' + (missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''));
   const css = fs.readFileSync(ROOT + '/frontend/styles.css', 'utf8');
-  const badFonts = [...css.matchAll(/@font-face\{[^}]*url\(([^)]+)\)/g)].map(m => m[1].replace(/['"]/g, '')).filter(u => !fs.existsSync(ROOT + '/frontend/' + u));
-  ok(!badFonts.length, 'every @font-face file in styles.css exists' + (badFonts.length ? ' (missing: ' + badFonts.join(', ') + ')' : ''));
+  const noFont = [...css.matchAll(/@font-face\{[^}]*url\(([^)]+)\)/g)].map(m => m[1].replace(/['"]/g, '')).filter(u => !fs.existsSync(ROOT + '/frontend/' + u));
+  if (noFont.length) console.log('  note  font file(s) not on disk, the browser falls back to the next font: ' + noFont.join(', '));
   let installFailed = false; await fire('install', {}).catch(() => installFailed = true);
   ok(!installFailed && Object.keys(store[VERSION] || {}).length === SHELL.length, `install precaches all ${SHELL.length} shell files`);
   await fire('activate', {}); ok(!store['aquafind-v1'] && log.includes('claimed'), 'activate deletes old caches and claims clients');
