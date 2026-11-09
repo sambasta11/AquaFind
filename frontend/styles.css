@@ -1739,3 +1739,38 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 @media not all{
   #app::before,#app::after,.is-auth .auth::before,.is-auth .auth::after{animation:none!important}
 }
+
+/* =====================================================================
+   Sign-in logo: click = the logo splits (peak flies up, wave drops down),
+   then both halves collide back together to complete the logo, with a
+   glow flash on the mark (only the mark) at the collision.
+   JS (main.js) toggles .spit on .auth-logo.
+   ===================================================================== */
+.auth-logo{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.auth-logo.spit .logo-live{animation:arFloat 4.2s ease-in-out infinite,spitGlow 2.1s ease-in-out both,spitPop 2.1s ease-in-out both}
+.auth-logo.spit .logo-live .hl-full path:first-child{animation:arPeak 4.2s ease-in-out infinite,spitUp 2.1s linear both}
+.auth-logo.spit .logo-live .hl-full path:last-child{animation:arWave 2.6s ease-in-out infinite,spitDown 2.1s linear both}
+@keyframes spitUp{
+  0%,10%{translate:0 0}
+  32%{translate:0 -15px;animation-timing-function:ease-in-out}
+  52%{translate:0 -14px;animation-timing-function:cubic-bezier(.6,0,.9,.6)}
+  70%{translate:0 1.6px;animation-timing-function:ease-out}   /* collision: slight overlap */
+  80%{translate:0 -1.2px}
+  90%{translate:0 .4px}
+  100%{translate:0 0}}
+@keyframes spitDown{
+  0%,10%{translate:0 0}
+  32%{translate:0 26px;animation-timing-function:ease-in-out}
+  52%{translate:0 25px;animation-timing-function:cubic-bezier(.6,0,.9,.6)}
+  70%{translate:0 -2px;animation-timing-function:ease-out}
+  80%{translate:0 1.4px}
+  90%{translate:0 -.4px}
+  100%{translate:0 0}}
+/* small pop when the halves hit */
+@keyframes spitPop{0%,66%{scale:1}71%{scale:1.1}82%{scale:.97}100%{scale:1}}
+/* glow flash on the logo mark only: strongest at the collision, then fades */
+@keyframes spitGlow{
+  0%,60%{filter:drop-shadow(0 0 0 rgba(125,225,255,0))}
+  70%{filter:drop-shadow(0 0 10px rgba(255,255,255,1)) drop-shadow(0 0 26px rgba(80,200,255,1))}
+  80%{filter:drop-shadow(0 0 8px rgba(210,250,255,1)) drop-shadow(0 0 20px rgba(80,200,255,.95))}
+  100%{filter:drop-shadow(0 0 0 rgba(125,225,255,0))}}
