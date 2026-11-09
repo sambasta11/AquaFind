@@ -488,3 +488,18 @@ window.addEventListener('aqf-online', async () => {
     if (!raf) raf = requestAnimationFrame(tick);
   }, { passive: true });
 })();
+
+/* Tap / click bubble burst: a few bubbles float up from wherever the user taps. */
+(() => {
+  let live = 0;
+  document.addEventListener('pointerdown', e => {
+    if (e.button > 0 || live > 40) return;
+    for (let i = 0; i < 5; i++) {
+      const b = document.createElement('i'), s = 6 + Math.random() * 14;
+      b.className = 'tap-bub';
+      b.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;width:${s}px;height:${s}px;--dx:${(Math.random() - .5) * 90}px;--dy:${-(40 + Math.random() * 90)}px;--d:${700 + Math.random() * 600}ms`;
+      live++; b.addEventListener('animationend', () => { b.remove(); live--; }, { once: true });
+      document.body.appendChild(b);
+    }
+  }, { passive: true });
+})();
