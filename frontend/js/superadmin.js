@@ -83,7 +83,7 @@ const ROLE_L = { user: 'User', admin: 'Station admin', superadmin: 'System admin
 .sx .ahead p{color:#4F7391}
 .sx-empty{padding:28px 0;color:var(--slate);text-align:center;font-size:14px}
 @media(min-width:760px){.sx-kpis{grid-template-columns:repeat(4,1fr)}.sx-cols{grid-template-columns:1fr 1fr}}
-@media(prefers-reduced-motion:no-preference){
+@media all{
 .sx.fx .sx-kpi{animation:sxUp .55s var(--sx-ease) both;animation-delay:calc(var(--i,0)*80ms)}
 .sx.fx .sx-card{animation:sxUp .6s var(--sx-ease) both;animation-delay:calc(300ms + var(--i,0)*100ms)}
 .sx.fx .sx-seg{animation:sxSeg .9s cubic-bezier(.3,.7,.2,1) both;animation-delay:calc(520ms + var(--i,0)*130ms)}
