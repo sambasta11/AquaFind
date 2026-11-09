@@ -1741,35 +1741,83 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 }
 
 
-/* ---------- Sign-in hero: watery wordmark + tagline ---------- */
+/* ---------- Sign-in hero: glassy aqua wordmark + tagline ---------- */
 .is-auth .auth-hero b{
   position:relative;display:inline-block;
-  background:linear-gradient(100deg,#E6F8FF 0%,#7DD3FC 22%,#FFFFFF 40%,#38BDF8 58%,#A5E8FF 78%,#E6F8FF 100%);
-  background-size:260% 100%;
+  font-weight:800;letter-spacing:-.025em;
+  background:linear-gradient(105deg,#7DD3FC 0%,#E0F7FF 30%,#FFFFFF 42%,#E0F7FF 54%,#38BDF8 78%,#7DD3FC 100%);
+  background-size:260% 100%;background-position:100% 50%;
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
-  filter:drop-shadow(0 2px 14px rgba(56,189,248,.45)) drop-shadow(0 0 28px rgba(14,165,233,.25));
-  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .45s both,waterFlow 7s ease-in-out 1.2s infinite,waterBob 5s ease-in-out 1.2s infinite;
-  -webkit-box-reflect:below -6px linear-gradient(transparent 45%,rgba(255,255,255,.22));
+  filter:drop-shadow(0 0 18px rgba(56,189,248,.35)) drop-shadow(0 3px 10px rgba(6,28,48,.35));
+  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .45s both,aquaSheen 7s ease-in-out 1.4s infinite;
 }
-/* rippling water line instead of the flat rule */
+/* glowing water-line: bright core fading out, with a luminous centre */
 .is-auth .auth-hero b::after{
-  content:"";display:block;width:132px;height:12px;margin:12px auto 0;border-radius:0;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='12' viewBox='0 0 44 12'%3E%3Cpath d='M0 6q5.5-6 11 0t11 0 11 0 11 0' fill='none' stroke='%237DD3FC' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 0 0/44px 12px repeat-x;
-  -webkit-mask:linear-gradient(90deg,transparent,#000 25%,#000 75%,transparent);mask:linear-gradient(90deg,transparent,#000 25%,#000 75%,transparent);
-  opacity:.9;-webkit-text-fill-color:initial;
-  animation:rippleSlide 2.4s linear infinite;
+  content:"";display:block;width:120px;height:2px;margin:16px auto 0;border-radius:2px;
+  background:linear-gradient(90deg,rgba(56,189,248,0),#38BDF8 25%,#E0F7FF 50%,#38BDF8 75%,rgba(56,189,248,0));
+  box-shadow:0 0 14px 1px rgba(56,189,248,.65);
+  -webkit-text-fill-color:initial;animation:none;
 }
 .is-auth .auth-hero>span:last-of-type{
-  font-style:italic;letter-spacing:.02em;
-  background:linear-gradient(100deg,#FFFFFF 0%,#A5E8FF 30%,#5CC8F7 50%,#CFF1FF 70%,#FFFFFF 100%);
-  background-size:240% 100%;
+  display:inline-flex;align-items:center;gap:14px;
+  font-style:normal;font-weight:500;letter-spacing:.32em;text-transform:uppercase;
+  font-size:12px;line-height:1.5;margin-top:6px;max-width:none;font-family:var(--ui);
+  background:linear-gradient(90deg,#BAE6FD,#FFFFFF 50%,#BAE6FD);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
-  text-shadow:none;filter:drop-shadow(0 1px 10px rgba(56,189,248,.4));
-  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .65s both,waterFlow 9s ease-in-out 1.4s infinite reverse;
+  filter:drop-shadow(0 1px 8px rgba(6,28,48,.4));
+  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .65s both;
 }
-@keyframes waterFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-@keyframes waterBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-@keyframes rippleSlide{to{background-position:44px 0}}
+.is-auth .auth-hero>span:last-of-type::before,.is-auth .auth-hero>span:last-of-type::after{
+  content:"";width:22px;height:1px;flex:none;-webkit-text-fill-color:initial;
+  background:linear-gradient(90deg,rgba(186,230,253,0),rgba(186,230,253,.8));
+}
+.is-auth .auth-hero>span:last-of-type::after{transform:scaleX(-1)}
+@keyframes aquaSheen{0%{background-position:100% 50%}55%,100%{background-position:0% 50%}}
+@media(min-width:900px){
+  .is-auth .auth-hero b{font-size:50px}
+  .is-auth .auth-hero>span:last-of-type{font-size:13px;margin-top:8px}
+  .is-auth .auth-hero>span:last-of-type::before,.is-auth .auth-hero>span:last-of-type::after{width:34px}
+}
 @media(prefers-reduced-motion:reduce){
-  .is-auth .auth-hero b,.is-auth .auth-hero b::after,.is-auth .auth-hero>span:last-of-type{animation:none!important;opacity:1}
+  .is-auth .auth-hero b,.is-auth .auth-hero>span:last-of-type{animation:none!important;opacity:1;background-position:50% 50%}
+}
+
+/* ---------- Sign-in hero: words drift together, touch, and settle ---------- */
+.is-auth .auth-hero b{
+  background:none;-webkit-text-fill-color:initial;color:transparent;
+  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .45s both;
+}
+.is-auth .auth-hero b .w1,.is-auth .auth-hero b .w2{
+  display:inline-block;
+  background:linear-gradient(105deg,#7DD3FC 0%,#E0F7FF 30%,#FFFFFF 42%,#E0F7FF 54%,#38BDF8 78%,#7DD3FC 100%);
+  background-size:260% 100%;background-position:100% 50%;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+}
+.is-auth .auth-hero b .w1{animation:wCollideL 1.5s cubic-bezier(.3,.7,.2,1) .5s both,wBumpL 7s ease-in-out 2.4s infinite,aquaSheen 7s ease-in-out 2.4s infinite}
+.is-auth .auth-hero b .w2{animation:wCollideR 1.5s cubic-bezier(.3,.7,.2,1) .5s both,wBumpR 7s ease-in-out 2.4s infinite,aquaSheen 7s ease-in-out 2.4s infinite}
+@keyframes wCollideL{0%{transform:translateX(-34px);opacity:0;filter:blur(6px)}55%{transform:translateX(4px);opacity:1;filter:blur(0)}75%{transform:translateX(-2px)}100%{transform:none}}
+@keyframes wCollideR{0%{transform:translateX(34px);opacity:0;filter:blur(6px)}55%{transform:translateX(-4px);opacity:1;filter:blur(0)}75%{transform:translateX(2px)}100%{transform:none}}
+@keyframes wBumpL{0%,84%,100%{transform:none}90%{transform:translateX(3px)}95%{transform:translateX(-1.5px)}}
+@keyframes wBumpR{0%,84%,100%{transform:none}90%{transform:translateX(-3px)}95%{transform:translateX(1.5px)}}
+/* glow line pulses at the moment of contact */
+.is-auth .auth-hero b::after{animation:lineHit 7s ease-in-out 2.4s infinite}
+@keyframes lineHit{0%,84%,100%{transform:scaleX(1);opacity:1}90%{transform:scaleX(1.35);opacity:1;box-shadow:0 0 22px 3px rgba(56,189,248,.8)}}
+
+.is-auth .auth-hero>span:last-of-type{background:none;-webkit-text-fill-color:initial;color:transparent;gap:0}
+.is-auth .auth-hero>span:last-of-type::before{margin-right:14px}
+.is-auth .auth-hero>span:last-of-type::after{margin-left:14px}
+.is-auth .auth-hero>span:last-of-type em{
+  font-style:normal;display:inline-block;
+  background:linear-gradient(90deg,#BAE6FD,#FFFFFF 50%,#BAE6FD);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+}
+.is-auth .auth-hero>span:last-of-type em+em{margin-left:.9em}
+.is-auth .auth-hero>span:last-of-type em:first-of-type{animation:tCollideL 1.4s cubic-bezier(.3,.7,.2,1) 1.1s both,tBumpL 7s ease-in-out 3s infinite}
+.is-auth .auth-hero>span:last-of-type em+em{animation:tCollideR 1.4s cubic-bezier(.3,.7,.2,1) 1.1s both,tBumpR 7s ease-in-out 3s infinite}
+@keyframes tCollideL{0%{transform:translateX(-22px);opacity:0}60%{transform:translateX(2px);opacity:1}80%{transform:translateX(-1px)}100%{transform:none}}
+@keyframes tCollideR{0%{transform:translateX(22px);opacity:0}60%{transform:translateX(-2px);opacity:1}80%{transform:translateX(1px)}100%{transform:none}}
+@keyframes tBumpL{0%,84%,100%{transform:none}90%{transform:translateX(2px)}95%{transform:translateX(-1px)}}
+@keyframes tBumpR{0%,84%,100%{transform:none}90%{transform:translateX(-2px)}95%{transform:translateX(1px)}}
+@media(prefers-reduced-motion:reduce){
+  .is-auth .auth-hero b .w1,.is-auth .auth-hero b .w2,.is-auth .auth-hero>span:last-of-type em,.is-auth .auth-hero b::after{animation:none!important;opacity:1;transform:none}
 }
