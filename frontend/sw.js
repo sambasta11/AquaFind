@@ -3,11 +3,11 @@
    - HTML/CSS/JS: network first, cache fallback (updates arrive immediately when online).
    - Fonts, icons, Leaflet, artwork: cache first (they rarely change).
    Bump VERSION when you change the SHELL list. */
-const VERSION = 'aquafind-v19';
+const VERSION = 'aquafind-v20';
 const SHELL = [
   '/', '/index.html', '/offline.html', '/offline.js', '/styles.css', '/config.js', '/manifest.webmanifest',
   '/js/core.js', '/js/oauth.js', '/js/maps.js', '/js/views.js', '/js/admin.js', '/js/superadmin.js', '/js/main.js', '/js/pwa.js',
-  '/fonts/manrope-latin-wght-normal.woff2', '/fonts/inter-latin-wght-normal.woff2', '/fonts/gfs-baskerville-latin.woff',
+  '/fonts/manrope-latin-wght-normal.woff2', '/fonts/inter-latin-wght-normal.woff2',
   '/vendor/supabase/supabase.js', '/vendor/leaflet/leaflet.js', '/vendor/leaflet/leaflet.css',
   '/vendor/leaflet/images/marker-icon.png', '/vendor/leaflet/images/marker-icon-2x.png',
   '/vendor/leaflet/images/marker-shadow.png', '/vendor/leaflet/images/layers.png', '/vendor/leaflet/images/layers-2x.png',
