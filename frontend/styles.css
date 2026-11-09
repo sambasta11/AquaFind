@@ -1740,28 +1740,36 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
   #app::before,#app::after,.is-auth .auth::before,.is-auth .auth::after{animation:none!important}
 }
 
-/* =====================================================================
-   Wordmark + tagline (sign-in / sign-up hero). Paste at the very END of styles.css.
-   The name fades in, then gives a small, gentle shake every few seconds.
-   ===================================================================== */
-.auth-hero b.wm{animation:none!important;display:block;text-align:center;background:none;-webkit-text-fill-color:initial;overflow:visible}
-.auth-hero b.wm i{font-style:normal;display:inline-block;color:#fff;
-  animation:wmIn .7s ease-out calc(.45s + var(--i)*50ms) both,
-            wmShake 5s ease-in-out calc(2s + var(--i)*35ms) infinite}
-@media(min-width:900px){
-  .is-auth .auth-hero b.wm i{background:linear-gradient(180deg,#fff 30%,#BFE9FF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ---------- Sign-in hero: watery wordmark + tagline ---------- */
+.is-auth .auth-hero b{
+  position:relative;display:inline-block;
+  background:linear-gradient(100deg,#E6F8FF 0%,#7DD3FC 22%,#FFFFFF 40%,#38BDF8 58%,#A5E8FF 78%,#E6F8FF 100%);
+  background-size:260% 100%;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  filter:drop-shadow(0 2px 14px rgba(56,189,248,.45)) drop-shadow(0 0 28px rgba(14,165,233,.25));
+  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .45s both,waterFlow 7s ease-in-out 1.2s infinite,waterBob 5s ease-in-out 1.2s infinite;
+  -webkit-box-reflect:below -6px linear-gradient(transparent 45%,rgba(255,255,255,.22));
 }
-@keyframes wmIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
-/* a short, soft shake (about 0.7s) followed by a long rest */
-@keyframes wmShake{
-  0%,16%,100%{translate:0 0;rotate:0deg}
-  2%{translate:-1.5px 0;rotate:-1.2deg}4%{translate:1.5px -.5px;rotate:1.2deg}
-  6%{translate:-1.2px .5px;rotate:-.9deg}8%{translate:1.2px 0;rotate:.9deg}
-  10%{translate:-.7px 0;rotate:-.5deg}12%{translate:.7px 0;rotate:.5deg}14%{translate:-.3px 0;rotate:0deg}
+/* rippling water line instead of the flat rule */
+.is-auth .auth-hero b::after{
+  content:"";display:block;width:132px;height:12px;margin:12px auto 0;border-radius:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='12' viewBox='0 0 44 12'%3E%3Cpath d='M0 6q5.5-6 11 0t11 0 11 0 11 0' fill='none' stroke='%237DD3FC' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 0 0/44px 12px repeat-x;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 25%,#000 75%,transparent);mask:linear-gradient(90deg,transparent,#000 25%,#000 75%,transparent);
+  opacity:.9;-webkit-text-fill-color:initial;
+  animation:rippleSlide 2.4s linear infinite;
 }
-.auth-hero b.wm::after{animation-delay:1s}
-.auth-hero>span.wm-tag{animation:wmTagIn .8s ease-out 1s both}
-@keyframes wmTagIn{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){
-  .auth-hero b.wm i,.auth-hero>span.wm-tag{animation:none!important;opacity:1}
+.is-auth .auth-hero>span:last-of-type{
+  font-style:italic;letter-spacing:.02em;
+  background:linear-gradient(100deg,#FFFFFF 0%,#A5E8FF 30%,#5CC8F7 50%,#CFF1FF 70%,#FFFFFF 100%);
+  background-size:240% 100%;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  text-shadow:none;filter:drop-shadow(0 1px 10px rgba(56,189,248,.4));
+  animation:heroUp .8s cubic-bezier(.2,.8,.2,1) .65s both,waterFlow 9s ease-in-out 1.4s infinite reverse;
+}
+@keyframes waterFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes waterBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes rippleSlide{to{background-position:44px 0}}
+@media(prefers-reduced-motion:reduce){
+  .is-auth .auth-hero b,.is-auth .auth-hero b::after,.is-auth .auth-hero>span:last-of-type{animation:none!important;opacity:1}
 }
