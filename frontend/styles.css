@@ -1739,3 +1739,76 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
 @media not all{
   #app::before,#app::after,.is-auth .auth::before,.is-auth .auth::after{animation:none!important}
 }
+
+
+/* ---------- Sign-in hero v9: refined wordmark + tagline (text under the logo) ---------- */
+.is-auth .auth-hero b{
+  display:block;margin-top:14px;font:800 38px/1 var(--display);letter-spacing:-.04em;
+  background:none;-webkit-text-fill-color:currentColor;color:#fff;
+  text-shadow:0 2px 24px rgba(6,28,48,.35)}
+.is-auth .auth-hero b .w1{color:#fff;font-weight:800}
+.is-auth .auth-hero b .w2{font-weight:600;letter-spacing:-.035em;color:transparent;
+  background:linear-gradient(180deg,#E6F7FF 10%,#7DD3FC 55%,#38BDF8);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.is-auth .auth-hero b::after{width:0;height:1.5px;margin:18px auto 0;
+  background:linear-gradient(90deg,transparent,rgba(125,211,252,.95),transparent);
+  box-shadow:0 0 12px rgba(125,211,252,.55);animation:heroLine80 1s cubic-bezier(.2,.8,.2,1) 1s forwards}
+@keyframes heroLine80{to{width:80px}}
+.is-auth .auth-hero>span:last-of-type{
+  display:inline-flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 .7em;
+  margin-top:16px;max-width:none;
+  font:600 11.5px/1.6 var(--display);text-transform:uppercase;letter-spacing:.28em;
+  color:rgba(255,255,255,.78);background:none;-webkit-text-fill-color:currentColor;
+  text-shadow:0 1px 14px rgba(6,28,48,.35)}
+.is-auth .auth-hero>span:last-of-type em{font-style:normal;margin-right:-.28em}
+.is-auth .auth-hero>span:last-of-type em:last-of-type{color:#9ADDFB;font-weight:700}
+.is-auth .auth-hero>span:last-of-type::before,.is-auth .auth-hero>span:last-of-type::after{
+  content:"";flex:none;width:18px;height:1px;margin-right:-.28em;
+  background:linear-gradient(90deg,transparent,rgba(186,230,253,.7))}
+.is-auth .auth-hero>span:last-of-type::after{background:linear-gradient(270deg,transparent,rgba(186,230,253,.7));margin:0 0 0 .28em}
+@media(min-width:900px){
+  .is-auth .auth-hero b{font-size:60px;margin-top:22px;letter-spacing:-.045em;
+    translate:calc(var(--dx,0)*-6px) calc(var(--dy,0)*-4px)}
+  .is-auth .auth-hero b::after{margin-top:24px}
+  .is-auth .auth-hero>span:last-of-type{
+    margin-top:22px;font:600 14px/1.6 var(--display);letter-spacing:.34em;gap:0 .8em;
+    background:none;-webkit-text-fill-color:currentColor;color:rgba(255,255,255,.8)}
+  .is-auth .auth-hero>span:last-of-type em{margin-right:-.34em}
+  .is-auth .auth-hero>span:last-of-type::before,.is-auth .auth-hero>span:last-of-type::after{width:36px;margin-right:-.34em}
+  .is-auth .auth-hero>span:last-of-type::after{margin:0 0 0 .34em}
+}
+@media(min-width:900px) and (max-height:820px){
+  .is-auth .auth-hero b{font-size:50px;margin-top:16px}
+  .is-auth .auth-hero>span:last-of-type{font-size:13px;margin-top:16px}
+}
+@media not all{.is-auth .auth-hero b::after{animation:none!important;width:80px}}
+
+
+/* ---------- Sign-in hero v10: "Aqua" and "Find" meet with a small, realistic bump ---------- */
+.is-auth .auth-hero b{position:relative;animation:none;opacity:1}
+.is-auth .auth-hero b .w1,.is-auth .auth-hero b .w2{display:inline-block;will-change:transform,opacity;opacity:0;animation-duration:1.1s;animation-delay:.45s;animation-fill-mode:both}
+.is-auth .auth-hero b .w1{transform-origin:100% 60%;animation-name:wBumpL}
+.is-auth .auth-hero b .w2{transform-origin:0 60%;animation-name:wBumpR}
+@keyframes wBumpL{
+  0%{opacity:0;transform:translateX(-34px);animation-timing-function:cubic-bezier(.5,0,.8,.6)}
+  30%{opacity:1}
+  44%{opacity:1;transform:translateX(1px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+  50%{transform:translateX(2px) scaleX(.97)}
+  66%{transform:translateX(-4px) scaleX(1);animation-timing-function:ease-in-out}
+  82%{transform:translateX(1px)}
+  100%{opacity:1;transform:none}}
+@keyframes wBumpR{
+  0%{opacity:0;transform:translateX(34px);animation-timing-function:cubic-bezier(.5,0,.8,.6)}
+  30%{opacity:1}
+  44%{opacity:1;transform:translateX(-1px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+  50%{transform:translateX(-2px) scaleX(.97)}
+  66%{transform:translateX(4px) scaleX(1);animation-timing-function:ease-in-out}
+  82%{transform:translateX(-1px)}
+  100%{opacity:1;transform:none}}
+/* line and tagline arrive just after the bump */
+.is-auth .auth-hero b::after{animation-delay:1.3s}
+.is-auth .auth-hero>span:last-of-type{animation:heroUp .8s cubic-bezier(.2,.8,.2,1) 1.2s both}
+@media(prefers-reduced-motion:reduce){
+  .is-auth .auth-hero b .w1,.is-auth .auth-hero b .w2,.is-auth .auth-hero>span:last-of-type{animation:none!important;opacity:1;transform:none}
+  .is-auth .auth-hero b::after{animation:none!important;width:80px}
+}
