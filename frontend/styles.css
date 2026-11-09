@@ -1740,37 +1740,25 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
   #app::before,#app::after,.is-auth .auth::before,.is-auth .auth::after{animation:none!important}
 }
 
+
 /* =====================================================================
-   Sign-in logo: click = the logo splits (peak flies up, wave drops down),
-   then both halves collide back together to complete the logo, with a
-   glow flash on the mark (only the mark) at the collision.
-   JS (main.js) toggles .spit on .auth-logo.
+   Sign-in logo: realistic click (pressed in, tilts away from the finger,
+   springs back, ripples + droplets, wave surge). Pairs with the logo
+   block at the end of js/main.js. Paste at the very END of styles.css.
    ===================================================================== */
-.auth-logo{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-.auth-logo.spit .logo-live{animation:arFloat 4.2s ease-in-out infinite,spitGlow 2.1s ease-in-out both,spitPop 2.1s ease-in-out both}
-.auth-logo.spit .logo-live .hl-full path:first-child{animation:arPeak 4.2s ease-in-out infinite,spitUp 2.1s linear both}
-.auth-logo.spit .logo-live .hl-full path:last-child{animation:arWave 2.6s ease-in-out infinite,spitDown 2.1s linear both}
-@keyframes spitUp{
-  0%,10%{translate:0 0}
-  32%{translate:0 -15px;animation-timing-function:ease-in-out}
-  52%{translate:0 -14px;animation-timing-function:cubic-bezier(.6,0,.9,.6)}
-  70%{translate:0 1.6px;animation-timing-function:ease-out}   /* collision: slight overlap */
-  80%{translate:0 -1.2px}
-  90%{translate:0 .4px}
-  100%{translate:0 0}}
-@keyframes spitDown{
-  0%,10%{translate:0 0}
-  32%{translate:0 26px;animation-timing-function:ease-in-out}
-  52%{translate:0 25px;animation-timing-function:cubic-bezier(.6,0,.9,.6)}
-  70%{translate:0 -2px;animation-timing-function:ease-out}
-  80%{translate:0 1.4px}
-  90%{translate:0 -.4px}
-  100%{translate:0 0}}
-/* small pop when the halves hit */
-@keyframes spitPop{0%,66%{scale:1}71%{scale:1.1}82%{scale:.97}100%{scale:1}}
-/* glow flash on the logo mark only: strongest at the collision, then fades */
-@keyframes spitGlow{
-  0%,60%{filter:drop-shadow(0 0 0 rgba(125,225,255,0))}
-  70%{filter:drop-shadow(0 0 10px rgba(255,255,255,1)) drop-shadow(0 0 26px rgba(80,200,255,1))}
-  80%{filter:drop-shadow(0 0 8px rgba(210,250,255,1)) drop-shadow(0 0 20px rgba(80,200,255,.95))}
-  100%{filter:drop-shadow(0 0 0 rgba(125,225,255,0))}}
+.is-auth .auth-hero{perspective:800px}
+.is-auth .auth-logo{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+  transition:translate .25s ease-out,rotate .16s cubic-bezier(.2,.7,.3,1),scale .16s cubic-bezier(.2,.7,.3,1)}
+/* replaces the old hover tilt: a light lift only, so it never fights the click motion */
+.auth-logo:hover .logo-live{transform:none}
+.auth-logo .logo-live{transition:scale .35s cubic-bezier(.2,1.3,.3,1)}
+@media(hover:hover){.auth-logo:hover .logo-live{scale:1.07}}
+.auth-logo .logo-rip{position:absolute;z-index:0;width:200px;height:200px;border-radius:50%;pointer-events:none;opacity:0;
+  border:1.5px solid rgba(186,230,253,.85);box-shadow:0 0 12px rgba(125,211,252,.35),inset 0 0 12px rgba(125,211,252,.2)}
+.auth-logo .logo-flash{position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;opacity:0}
+.auth-logo .logo-drop{position:absolute;z-index:2;border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 35% 28%,#fff 0,rgba(214,244,255,.95) 30%,rgba(86,190,240,.75) 100%);box-shadow:0 0 8px rgba(125,211,252,.55)}
+.auth-logo.is-splash .logo-live .hl-full path:last-child{animation:arSurge 1s cubic-bezier(.2,.7,.3,1)}
+.auth-logo.is-splash .logo-live .hl-full path:first-child{animation:arPeakPop 1s cubic-bezier(.2,.7,.3,1)}
+@keyframes arSurge{0%{transform:translate(-3px,.6px)}18%{transform:translate(6px,-3.4px)}40%{transform:translate(-5px,2.2px)}62%{transform:translate(3.4px,-1.2px)}82%{transform:translate(-3.6px,.9px)}100%{transform:translate(-3px,.6px)}}
+@keyframes arPeakPop{0%{transform:scale(1)}20%{transform:scale(1.12,1.2)}45%{transform:scale(.97,.95)}70%{transform:scale(1.03,1.05)}100%{transform:scale(1)}}
