@@ -1,8 +1,11 @@
 const ROOT = require('path').resolve(__dirname, '..');
 const vm = require('vm'), fs = require('fs');
 const code = fs.readFileSync(''+ROOT+'/frontend/sw.js', 'utf8');
+const VERSION = (code.match(/const VERSION = '([^']+)'/) || [])[1];
+const SHELL = [...(code.match(/const SHELL = \[([\s\S]*?)\];/) || ['', ''])[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
+const onDisk = u => fs.existsSync(ROOT + '/frontend' + (u === '/' ? '/index.html' : u));
 const store = {}; let online = true; const log = []; const handlers = {};
-const mkCache = n => ({ put: async (k, r) => { (store[n] ||= {})[typeof k === 'string' ? k : k.url.replace('http://x', '')] = r; }, addAll: async reqs => { for (const r of reqs) (store[n] ||= {})[r.url.replace('http://x', '')] = { ok: true, body: 'cached:' + r.url }; } });
+const mkCache = n => ({ put: async (k, r) => { (store[n] ||= {})[typeof k === 'string' ? k : k.url.replace('http://x', '')] = r; }, addAll: async reqs => { for (const r of reqs) if (!onDisk(r.url.replace('http://x', ''))) throw new TypeError('addAll: 404 for ' + r.url); for (const r of reqs) (store[n] ||= {})[r.url.replace('http://x', '')] = { ok: true, body: 'cached:' + r.url }; } });
 const caches = { open: async n => mkCache(n), keys: async () => Object.keys(store), delete: async k => { delete store[k]; log.push('deleted ' + k); },
   match: async k => { const key = typeof k === 'string' ? k : k.url.replace('http://x', ''); for (const n in store) if (store[n][key]) return store[n][key]; } };
 class Req { constructor(u, o = {}) { this.url = u.startsWith('http') ? u : 'http://x' + u; this.method = o.method || 'GET'; this.mode = o.mode || 'cors'; } }
@@ -13,7 +16,12 @@ const fire = async (t, ev) => { let p; ev.waitUntil = x => p = x; ev.respondWith
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  FAIL', m); };
 (async () => {
   store['aquafind-v1'] = { '/old': 1 };
-  await fire('install', {}); ok(Object.keys(store['aquafind-v9']).length === 32, 'install precaches all 32 shell files');
+  const missing = SHELL.filter(u => !onDisk(u)); ok(SHELL.length > 0 && !missing.length, 'every SHELL entry exists on disk' + (missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''));
+  const css = fs.readFileSync(ROOT + '/frontend/styles.css', 'utf8');
+  const badFonts = [...css.matchAll(/@font-face\{[^}]*url\(([^)]+)\)/g)].map(m => m[1].replace(/['"]/g, '')).filter(u => !fs.existsSync(ROOT + '/frontend/' + u));
+  ok(!badFonts.length, 'every @font-face file in styles.css exists' + (badFonts.length ? ' (missing: ' + badFonts.join(', ') + ')' : ''));
+  let installFailed = false; await fire('install', {}).catch(() => installFailed = true);
+  ok(!installFailed && Object.keys(store[VERSION] || {}).length === SHELL.length, `install precaches all ${SHELL.length} shell files`);
   await fire('activate', {}); ok(!store['aquafind-v1'] && log.includes('claimed'), 'activate deletes old caches and claims clients');
   let called = false; handlers.fetch({ request: new Req('/api/stations'), respondWith: () => called = true }); ok(!called, '/api/* is never intercepted (no cached availability)');
   called = false; handlers.fetch({ request: new Req('/api/chat', { method: 'POST' }), respondWith: () => called = true }); ok(!called, 'POST requests are not intercepted');
