@@ -30,16 +30,16 @@ const DEV_SECRET = 'aquafind-dev-secret-change-me';
 const SECRET = process.env.JWT_SECRET || DEV_SECRET;
 if (PROD && (SECRET === DEV_SECRET || SECRET.length < 24)) { console.error('Refusing to start: set JWT_SECRET (at least 24 random characters) when NODE_ENV=production.'); process.exit(1); }
 
-// Google / Facebook sign-in goes through Supabase Auth. The browser talks to Supabase to sign in; this server then verifies the
+// Google sign-in goes through Supabase Auth. The browser talks to Supabase to sign in; this server then verifies the
 // resulting Supabase session and issues AquaFind's own session token, so every other route keeps working unchanged.
 // SUPABASE_ANON_KEY is the public "anon" / "publishable" key (safe in the browser). The service-role / secret key must NEVER be set here.
 const SB_URL = (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
 const SB_KEY = (process.env.SUPABASE_ANON_KEY || '').trim();
 let SB_ORIGIN = '';
-try { if (SB_URL) SB_ORIGIN = new URL(SB_URL).origin; } catch { console.error('SUPABASE_URL is not a valid URL; Google/Facebook sign-in is disabled.'); }
+try { if (SB_URL) SB_ORIGIN = new URL(SB_URL).origin; } catch { console.error('SUPABASE_URL is not a valid URL; Google sign-in is disabled.'); }
 const keyRole = k => { try { return JSON.parse(Buffer.from(k.split('.')[1], 'base64url').toString()).role; } catch { return ''; } };
 if (SB_KEY && (SB_KEY.startsWith('sb_secret_') || keyRole(SB_KEY) === 'service_role')) {
-  console.error('SUPABASE_ANON_KEY holds a secret / service-role key. Refusing to expose it: use the public anon (publishable) key. Google/Facebook sign-in is disabled.');
+  console.error('SUPABASE_ANON_KEY holds a secret / service-role key. Refusing to expose it: use the public anon (publishable) key. Google sign-in is disabled.');
   SB_ORIGIN = '';
 }
 const SB_ON = !!(SB_ORIGIN && SB_KEY);
@@ -283,12 +283,12 @@ app.post('/api/auth/login', ah(async (req, res) => {
   if (!EMAIL.test(e)) return res.status(400).json({ error: 'Enter a valid email address.' });
   if (p.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   const u = await get('SELECT * FROM users WHERE email=?', e);
-  if (u && !u.password_hash) return res.status(401).json({ error: 'This account signs in with Google or Facebook. Use that button instead.' });
+  if (u && !u.password_hash) return res.status(401).json({ error: 'This account signs in with Google. Use that button instead.' });
   if (!u || !bcrypt.compareSync(p, u.password_hash)) return res.status(401).json({ error: 'Email or password is incorrect.' });
   if (u.active === 0) return res.status(403).json({ error: 'This account has been deactivated. Contact an administrator.' });
   res.json({ token: token(u), user: userOut(u) });
 }));
-// ---- Google / Facebook sign-in (real OAuth through Supabase Auth) ----
+// ---- Google sign-in (real OAuth through Supabase Auth) ----
 // Which providers are switched on in the Supabase project (public endpoint, cached for a minute). null = could not find out.
 let sbCache = { t: 0, v: null };
 async function sbProviders() {
@@ -296,7 +296,7 @@ async function sbProviders() {
   try {
     const r = await fetch(SB_ORIGIN + '/auth/v1/settings', { headers: { apikey: SB_KEY }, signal: AbortSignal.timeout(5000) });
     if (!r.ok) throw new Error('status ' + r.status);
-    const d = await r.json(); sbCache = { t: Date.now(), v: { google: !!d.external?.google, facebook: !!d.external?.facebook } };
+    const d = await r.json(); sbCache = { t: Date.now(), v: { google: !!d.external?.google } };
   } catch (e) { console.error('Could not read Supabase Auth settings:', e.message); return sbCache.v; }
   return sbCache.v;
 }
@@ -312,7 +312,7 @@ const sbUser = async at => {   // the same check supabase.auth.getUser(token) do
   return r.json();
 };
 // Copies the provider's profile picture into our own avatars table (best effort, https + known hosts only, same size and type checks as uploads).
-const PHOTO_HOST = /(^|\.)(googleusercontent\.com|fbsbx\.com|fbcdn\.net)$|^graph\.facebook\.com$/;
+const PHOTO_HOST = /(^|\.)googleusercontent\.com$/;
 async function importPhoto(userId, url) {
   try {
     let u = new URL(url);
@@ -330,16 +330,16 @@ async function importPhoto(userId, url) {
   } catch { /* a missing photo never blocks sign-in */ }
 }
 app.post('/api/auth/oauth', ah(async (req, res) => {
-  if (!SB_ON) return res.status(503).json({ error: 'Google and Facebook sign-in are not set up on this server yet. Use your email and password.' });
+  if (!SB_ON) return res.status(503).json({ error: 'Google sign-in is not set up on this server yet. Use your email and password.' });
   const at = typeof req.body.access_token === 'string' ? req.body.access_token : '';
   if (at.length < 20 || at.length > 6000) return res.status(400).json({ error: 'Sign-in could not be completed. Please try again.' });
   let su;
   try { su = await sbUser(at); } catch (e) { console.error('OAuth verify failed:', e.message); return res.status(502).json({ error: 'Could not reach the sign-in service. Please try again in a moment.' }); }
   if (!su || !su.id) return res.status(401).json({ error: 'Your sign-in expired before it finished. Please try again.' });
-  const ids = (su.identities || []).filter(i => i.provider === 'google' || i.provider === 'facebook')
+  const ids = (su.identities || []).filter(i => i.provider === 'google')
     .sort((a, b) => Date.parse(b.last_sign_in_at || 0) - Date.parse(a.last_sign_in_at || 0));
-  if (!ids.length) return res.status(403).json({ error: 'Only Google and Facebook sign-in are supported here.' });
-  const idn = ids[0], prov = idn.provider === 'facebook' ? 'Facebook' : 'Google', meta = { ...(idn.identity_data || {}), ...(su.user_metadata || {}) };
+  if (!ids.length) return res.status(403).json({ error: 'Only Google sign-in is supported here.' });
+  const idn = ids[0], prov = 'Google', meta = { ...(idn.identity_data || {}), ...(su.user_metadata || {}) };
   const sid = String(su.id);
   // Returning user: found by the Supabase user id, never by e-mail address.
   let u = await get('SELECT u.* FROM oauth_identities o JOIN users u ON u.user_id = o.user_id WHERE o.supabase_user_id=?', sid);
@@ -393,7 +393,7 @@ app.put('/api/me', auth, ah(async (req, res) => {
 }));
 app.put('/api/me/password', auth, ah(async (req, res) => {
   const { current = '', next = '' } = req.body;
-  if (!req.user.password_hash) return res.status(400).json({ error: 'This account signs in with Google or Facebook, so it has no AquaFind password.' });
+  if (!req.user.password_hash) return res.status(400).json({ error: 'This account signs in with Google, so it has no AquaFind password.' });
   if (!bcrypt.compareSync(current, req.user.password_hash)) return res.status(400).json({ error: 'Current password is incorrect.' });
   if (next.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters.' });
   if (await isWeakPassword(next)) return res.status(400).json({ error: WEAK_MSG });
