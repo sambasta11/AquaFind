@@ -31,17 +31,15 @@ const click = (t, sel) => t.d.querySelector(sel).dispatchEvent(new t.w.MouseEven
   for (let i = 0; i < 40; i++) { try { await fetch(URL0 + 'healthz'); break; } catch { await sleep(150); } }
   // 1. sign-in screen
   let t = await boot(); const btns = [...t.d.querySelectorAll('.soc .soc-btn')];
-  ok(btns.length === 2 && /Google/.test(btns[0].textContent) && /Facebook/.test(btns[1].textContent) && btns.every(b => b.querySelector('svg')), 'sign-in shows Google + Facebook buttons with brand icons');
+  ok(btns.length === 1 && /Google/.test(btns[0].textContent) && !/Facebook/.test(t.d.body.textContent) && btns.every(b => b.querySelector('svg')), 'sign-in shows only the Google button, with its brand icon');
   ok(!/demo sign-in|simulated/i.test(t.d.body.textContent), 'no "demo sign-in" wording left');
   // 2. click Google twice quickly
-  click(t, '[data-p=google]'); click(t, '[data-p=google]'); click(t, '[data-p=facebook]'); await sleep(40);
+  click(t, '[data-p=google]'); click(t, '[data-p=google]'); await sleep(40);
   ok([...t.d.querySelectorAll('.soc .soc-btn')].every(b => b.disabled) && t.d.querySelector('[data-p=google] .spinner'), 'buttons disabled + spinner while the request starts');
   await sleep(400);
   ok(t.calls.oauth.length === 1 && t.calls.oauth[0].provider === 'google', 'repeated clicks start only ONE Google sign-in');
   ok(t.calls.oauth[0].options.redirectTo === URL0 && t.calls.oauth[0].options.queryParams.prompt === 'select_account', 'redirects back to AquaFind and asks Google to show the account chooser');
   ok(t.calls.client.url === `http://127.0.0.1:${MOCK}` && t.calls.client.key === 'anon' && t.calls.client.o.auth.flowType === 'pkce', 'client built from server config, PKCE flow');
-  // 3. Facebook
-  t = await boot(); click(t, '[data-p=facebook]'); await sleep(500); ok(t.calls.oauth.length === 1 && t.calls.oauth[0].provider === 'facebook', 'Facebook button starts a Facebook sign-in');
   // 4. start fails
   t = await boot('', { oauthError: 'provider is not enabled' }); click(t, '[data-p=google]'); await sleep(500);
   ok(/provider is not enabled/.test(t.d.getElementById('socmsg').textContent) && [...t.d.querySelectorAll('.soc .soc-btn')].every(b => !b.disabled), 'start error is shown and the buttons come back');
@@ -54,7 +52,7 @@ const click = (t, sel) => t.d.querySelector(sel).dispatchEvent(new t.w.MouseEven
   ok(t.calls.signOut === 1 && !Object.keys(t.w.localStorage).some(k => k.startsWith('sb-')), 'temporary Supabase session is dropped after sign-in');
   const tok = t.w.localStorage.getItem('aqf'); ok(!!tok, 'AquaFind session token stored');
   t.w.location.hash = '#/account'; await sleep(600);
-  ok(/You sign in with Google or Facebook/.test(t.d.body.textContent) && !t.d.getElementById('pwform'), 'profile page: no password form for a Google-only account');
+  ok(/You sign in with Google/.test(t.d.body.textContent) && !t.d.getElementById('pwform'), 'profile page: no password form for a Google-only account');
   // 6. refresh keeps session; logout; protected page
   const t2 = await boot('', { token: tok }); ok(t2.w.eval('S.user && S.user.email') === 'ui.g@gmail.com', 'session persists after a page refresh');
   t2.w.eval("document.querySelector('[data-act=logout]').click()"); await sleep(500);
