@@ -10,13 +10,13 @@ html,body{background:#0B2038}
   padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
   background:radial-gradient(80% 50% at 50% 40%,rgba(56,189,248,.30),transparent 70%),linear-gradient(170deg,#0A1B30 0%,#0F3A6B 58%,#1976C9 100%);
   color:#fff;font-family:Manrope,Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  opacity:1;transition:opacity .7s cubic-bezier(.4,0,.2,1),visibility 0s .7s;-webkit-tap-highlight-color:transparent}
+  opacity:1;transition:opacity 1.1s cubic-bezier(.45,0,.2,1),visibility 0s 1.1s;-webkit-tap-highlight-color:transparent}
 #splash.out{opacity:0;visibility:hidden;pointer-events:none}
 #splash *{box-sizing:border-box}
 #splash .sp-light{position:absolute;inset:-20% -10% 30%;pointer-events:none;opacity:.5;
   background:repeating-conic-gradient(from 195deg at 50% -10%,rgba(160,225,255,.14) 0 4deg,transparent 4deg 13deg);
   -webkit-mask-image:linear-gradient(#000,transparent 80%);mask-image:linear-gradient(#000,transparent 80%);
-  animation:spSway 9s ease-in-out infinite alternate;transform-origin:50% 0}
+  animation:spSway 14s ease-in-out infinite alternate;transform-origin:50% 0}
 #splash .sp-b{position:absolute;bottom:-24px;left:var(--x);width:var(--s);height:var(--s);border-radius:50%;opacity:0;pointer-events:none;
   background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.85) 0 12%,rgba(255,255,255,.18) 40%,rgba(255,255,255,.05) 70%);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
@@ -29,25 +29,25 @@ html,body{background:#0B2038}
 #splash .sp-tile{position:relative;width:clamp(112px,30vmin,150px);aspect-ratio:1;padding:clamp(22px,5.6vmin,30px);border-radius:28%;
   background:linear-gradient(160deg,rgba(255,255,255,.96) 0%,#DDF1FF 100%);
   box-shadow:0 30px 70px rgba(2,12,28,.55),0 0 0 1px rgba(255,255,255,.55),inset 0 -8px 16px rgba(33,150,243,.16),inset 0 2px 0 rgba(255,255,255,.9);
-  opacity:0;transform:scale(.82) translateY(10px);animation:spIn 1s cubic-bezier(.16,1,.3,1) .05s forwards}
+  opacity:0;transform:scale(.82) translateY(10px);animation:spIn 1.8s cubic-bezier(.22,1,.36,1) .1s forwards}
 #splash .sp-tile::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
   background:linear-gradient(125deg,rgba(255,255,255,.7) 0%,transparent 38%);mix-blend-mode:soft-light}
-#splash .sp-float{position:absolute;inset:clamp(22px,5.6vmin,30px);animation:spFloat 4.6s ease-in-out 1.1s infinite}
+#splash .sp-float{position:absolute;inset:clamp(22px,5.6vmin,30px);animation:spFloat 6s ease-in-out 1.8s infinite}
 #splash .sp-glow{position:absolute;inset:-18%;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(110,215,255,.45),transparent 65%);opacity:0;animation:spGlow 4s ease-in-out .8s infinite}
 #splash .sp-tile svg{position:relative;display:block;width:100%;height:100%;overflow:visible}
 #splash .sp-ghost{fill:rgba(33,150,243,.14)}
-#splash .sp-rise{transform:translateY(66px);transition:transform 2.6s cubic-bezier(.22,.8,.2,1) .35s;will-change:transform}
+#splash .sp-rise{transform:translateY(66px);transition:transform 6s cubic-bezier(.3,.55,.4,1) .8s;will-change:transform}
 #splash.go .sp-rise{transform:translateY(20px)}
-#splash.full .sp-rise{transform:translateY(-6px);transition-duration:.9s;transition-delay:0s;transition-timing-function:cubic-bezier(.5,0,.2,1)}
+#splash.full .sp-rise{transform:translateY(-6px);transition-duration:1.8s;transition-delay:0s;transition-timing-function:cubic-bezier(.33,0,.25,1)}
 #splash .sp-w{will-change:transform}
-#splash .sp-w.a{animation:spW1 2.4s linear infinite}#splash .sp-w.b{animation:spW2 1.7s linear infinite}
+#splash .sp-w.a{animation:spW1 4s linear infinite}#splash .sp-w.b{animation:spW2 3s linear infinite}
 #splash .sp-name{margin:clamp(24px,5vh,36px) 0 0;font-weight:800;font-size:clamp(30px,6.4vmin,40px);line-height:1.1;letter-spacing:-.03em;text-shadow:0 4px 24px rgba(2,12,28,.5);
-  opacity:0;transform:translateY(12px);animation:spUp .9s cubic-bezier(.16,1,.3,1) .5s forwards}
+  opacity:0;transform:translateY(12px);animation:spUp 1.4s cubic-bezier(.22,1,.36,1) 1s forwards}
 #splash .sp-tag{margin:10px 0 0;font-weight:600;font-size:clamp(11px,2.2vmin,13px);letter-spacing:.2em;text-transform:uppercase;color:rgba(222,244,255,.8);
-  opacity:0;transform:translateY(10px);animation:spUp .9s cubic-bezier(.16,1,.3,1) .7s forwards}
-#splash .sp-bar{width:148px;height:3px;margin-top:30px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.14);opacity:0;animation:spUp .8s ease .9s forwards}
-#splash .sp-bar i{display:block;height:100%;width:100%;border-radius:3px;background:linear-gradient(90deg,#6FE3FF,#fff);transform:scaleX(.04);transform-origin:left;transition:transform 2.6s cubic-bezier(.22,.8,.2,1) .35s}
-#splash.go .sp-bar i{transform:scaleX(.82)}#splash.full .sp-bar i{transform:scaleX(1);transition-duration:.6s;transition-delay:0s}
+  opacity:0;transform:translateY(10px);animation:spUp 1.4s cubic-bezier(.22,1,.36,1) 1.5s forwards}
+#splash .sp-bar{width:148px;height:3px;margin-top:30px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.14);opacity:0;animation:spUp 1.2s ease 1.9s forwards}
+#splash .sp-bar i{display:block;height:100%;width:100%;border-radius:3px;background:linear-gradient(90deg,#6FE3FF,#fff);transform:scaleX(.04);transform-origin:left;transition:transform 6s cubic-bezier(.3,.55,.4,1) .8s}
+#splash.go .sp-bar i{transform:scaleX(.8)}#splash.full .sp-bar i{transform:scaleX(1);transition-duration:1.8s;transition-delay:0s;transition-timing-function:cubic-bezier(.33,0,.25,1)}
 @keyframes spIn{to{opacity:1;transform:none}}
 @keyframes spUp{to{opacity:1;transform:none}}
 @keyframes spFloat{50%{transform:translateY(-6px)}}
@@ -76,7 +76,7 @@ html,body{background:#0B2038}
 <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="styles.css"></head>
-<body><div id="splash" role="status" aria-live="polite" aria-label="Loading AquaFind"><div class="sp-light"></div><i class="sp-b" style="--x:8%;--s:7px;--t:9.5s;--d:0s;--w:14px"></i><i class="sp-b" style="--x:19%;--s:12px;--t:13s;--d:1.8s;--w:-9px"></i><i class="sp-b" style="--x:31%;--s:6px;--t:8s;--d:3.4s;--w:10px"></i><i class="sp-b" style="--x:42%;--s:15px;--t:15s;--d:0.9s;--w:-14px"></i><i class="sp-b" style="--x:55%;--s:9px;--t:11s;--d:4.6s;--w:12px"></i><i class="sp-b" style="--x:66%;--s:5px;--t:7.5s;--d:2.6s;--w:-8px"></i><i class="sp-b" style="--x:77%;--s:13px;--t:13.5s;--d:0.4s;--w:9px"></i><i class="sp-b" style="--x:88%;--s:8px;--t:10s;--d:3.9s;--w:-11px"></i><i class="sp-b" style="--x:14%;--s:10px;--t:16s;--d:6.2s;--w:8px"></i><i class="sp-b" style="--x:93%;--s:6px;--t:12s;--d:5.4s;--w:-6px"></i><div class="sp-sea"><i></i><i></i></div>
+<body><div id="splash" role="status" aria-live="polite" aria-label="Loading AquaFind"><div class="sp-light"></div><i class="sp-b" style="--x:8%;--s:7px;--t:15.2s;--d:0s;--w:14px"></i><i class="sp-b" style="--x:19%;--s:12px;--t:20.8s;--d:1.8s;--w:-9px"></i><i class="sp-b" style="--x:31%;--s:6px;--t:12.8s;--d:3.4s;--w:10px"></i><i class="sp-b" style="--x:42%;--s:15px;--t:24.0s;--d:0.9s;--w:-14px"></i><i class="sp-b" style="--x:55%;--s:9px;--t:17.6s;--d:4.6s;--w:12px"></i><i class="sp-b" style="--x:66%;--s:5px;--t:12.0s;--d:2.6s;--w:-8px"></i><i class="sp-b" style="--x:77%;--s:13px;--t:21.6s;--d:0.4s;--w:9px"></i><i class="sp-b" style="--x:88%;--s:8px;--t:16.0s;--d:3.9s;--w:-11px"></i><i class="sp-b" style="--x:14%;--s:10px;--t:25.6s;--d:6.2s;--w:8px"></i><i class="sp-b" style="--x:93%;--s:6px;--t:19.2s;--d:5.4s;--w:-6px"></i><div class="sp-sea"><i></i><i></i></div>
 <div class="sp-c"><div class="sp-tile"><div class="sp-glow"></div><div class="sp-float"><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs><g id="sp-p"><path d="M28.08 12.95 C28.01 13.01 27.63 13.63 26.69 15.24 C26.51 15.54 26.33 15.83 26.28 15.91 C26.23 15.98 26.02 16.34 25.81 16.71 C25.6 17.07 25.19 17.76 24.91 18.25 C24.31 19.26 23.84 20.06 22.86 21.78 C22.48 22.45 21.94 23.39 21.66 23.85 C21.22 24.62 20.75 25.43 20.12 26.54 C20 26.76 19.73 27.22 19.52 27.57 C19.17 28.18 18.83 28.75 18.13 29.97 C17.96 30.26 17.73 30.65 17.62 30.84 C17.52 31.03 17.2 31.59 16.92 32.09 C16.19 33.36 16.19 33.37 17.41 33.24 C18.43 33.14 22.6 33.12 23.6 33.22 C25.34 33.39 26.67 33.62 28.31 34.01 C29.48 34.29 29.69 34.31 29.69 34.16 C29.69 33.89 27.5 32.86 25.7 32.28 C24.66 31.94 24.66 31.94 24.89 31.55 C24.98 31.41 25.38 30.72 25.78 30.02 C26.19 29.32 26.72 28.4 26.97 27.97 C27.22 27.55 27.53 27.02 27.65 26.79 C27.99 26.19 28.14 25.95 28.2 25.95 C28.27 25.95 28.36 26.1 29.4 27.92 C29.88 28.78 30.4 29.68 30.54 29.91 C30.68 30.15 30.91 30.55 31.04 30.82 C31.18 31.08 31.38 31.43 31.47 31.59 C33.32 34.73 33.43 36.09 31.88 36.42 C31.17 36.57 30.45 36.48 28.67 36.01 C21.75 34.17 11.74 34.92 4.47 37.8 C2.28 38.67 1.85 38.9 2.04 39.09 C2.11 39.16 2.71 39.1 4.13 38.87 C4.74 38.77 6 38.63 7.52 38.5 C10.19 38.26 14.15 38.33 16.72 38.66 C19.1 38.95 23.2 39.93 25.86 40.83 C26.71 41.11 27.11 41.26 28.15 41.67 C28.71 41.9 30.1 42.56 30.64 42.85 C31.82 43.51 32.92 44.1 33.25 44.25 C37.58 46.24 41.06 47.05 45.39 47.06 C48.42 47.07 50.59 46.76 53.98 45.86 C56.88 45.09 62.56 42.55 61.93 42.31 C61.84 42.27 61.85 42.27 60.99 42.48 C55.05 43.92 50.13 43.4 46.4 40.91 C46.02 40.66 45.64 40.39 45.55 40.31 C45.47 40.23 45.3 40.1 45.18 40.01 C44.38 39.43 42.95 37.83 42.12 36.58 C41.69 35.93 41.45 35.53 40.65 34.11 C40.44 33.76 40.14 33.23 39.97 32.94 C39.8 32.65 39.57 32.26 39.47 32.07 C39.36 31.87 38.9 31.07 38.45 30.28 C37.37 28.41 37.49 28.62 36.84 27.47 C36.52 26.91 36.15 26.27 36.01 26.03 C35.87 25.8 35.67 25.44 35.55 25.24 C35.34 24.87 35.03 24.34 34.47 23.38 C34.32 23.11 34.02 22.6 33.81 22.23 C33.59 21.87 33.32 21.39 33.19 21.17 C33.05 20.95 32.74 20.41 32.48 19.97 C32.22 19.53 31.6 18.48 31.1 17.64 C30.59 16.79 30.01 15.8 29.79 15.43 C28.4 13.02 28.25 12.81 28.08 12.95 z"/><path d="M12.63 40.95 C10.52 41.03 7.59 41.45 5.64 41.93 C4.03 42.33 3.88 42.63 5.35 42.53 C9.63 42.23 16.32 43.58 21.04 45.69 C21.19 45.76 21.63 45.96 22.01 46.12 C22.39 46.29 23.31 46.74 24.05 47.12 C26.86 48.55 27.55 48.9 28.14 49.15 C32.97 51.19 38.21 51.66 43.74 50.55 C45.56 50.19 48.12 49.39 48.42 49.09 C48.65 48.86 48.46 48.84 47.22 48.94 C45.83 49.06 43.71 48.97 41.46 48.7 C39.58 48.48 36.61 47.78 34.79 47.13 C34.6 47.07 34.25 46.95 34.02 46.87 C33.19 46.58 31.14 45.74 30.59 45.45 C30.49 45.4 30.1 45.2 29.71 45.02 C29.34 44.83 28.81 44.55 28.54 44.41 C23.83 41.79 18.77 40.69 12.63 40.95 z"/></g><mask id="sp-m" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><use href="#sp-p" fill="#fff"/></mask>
 <linearGradient id="sp-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#21C3DB"/><stop offset="1" stop-color="#0F6C88"/></linearGradient></defs>
 <g class="sp-ghost"><use href="#sp-p"/></g><g mask="url(#sp-m)"><g class="sp-rise"><g class="sp-w a"><path d="M-32 4q8-6 16 0t16 0 16 0 16 0 16 0 16 0 16 0 16 0V90H-32z" fill="#6FE3F5"/></g><g class="sp-w b"><path d="M-32 4q8-6 16 0t16 0 16 0 16 0 16 0 16 0 16 0 16 0V90H-32z" fill="url(#sp-g)" transform="translate(0 3)"/></g></g></g></svg></div></div>
