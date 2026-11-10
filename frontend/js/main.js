@@ -580,7 +580,9 @@ window.addEventListener('aqf-online', async () => {
 });
 (async function boot() {
   render();
-  await bootSession();
+  // In the installed Android app, keep the animated startup loader on screen for at least 2.5 s (the website is unchanged).
+  const hold = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ? 2500 : 0;
+  await Promise.all([bootSession(), new Promise(r => setTimeout(r, hold))]);
   S.ready = true; S.anim = 'fade'; if (!S.chat.length) S.chat = [{ role: 'assistant', text: GREET, t: Date.now(), local: true }];
   if (isStaff(S.user) && !location.hash) location.hash = '#/admin'; else render();
   OAUTH.callback();   // returning from Google: finish the sign-in (or show why it did not finish)
