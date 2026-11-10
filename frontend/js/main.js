@@ -589,9 +589,9 @@ function hideSplash() {
   return (async () => {
     await frame();
     sp.classList.add('full');                 // water fills the mark, progress bar completes
-    await wait(calm ? 50 : 750);
+    await wait(calm ? 50 : 1900);   // let the water finish rising
     sp.classList.add('out');                  // crossfade into the already-rendered app
-    await wait(calm ? 50 : 720);
+    await wait(calm ? 50 : 1150);
     sp.remove(); document.getElementById('splash-css')?.remove();
     const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = '#EEF6FC';
   })();
@@ -601,7 +601,7 @@ function hideSplash() {
   // Minimum on-screen time so the animation never flashes by (longer in the installed app); a repeat visit in the same session is quicker.
   let seen = false; try { seen = sessionStorage.getItem('aqf-splash') === '1'; sessionStorage.setItem('aqf-splash', '1'); } catch { }
   const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  const hold = native ? 2500 : seen ? 900 : 1800;
+  const hold = native ? 4500 : seen ? 3000 : 4500;
   const t0 = window.__splashT || Date.now();
   await Promise.all([bootSession(), new Promise(r => setTimeout(r, Math.max(0, hold - (Date.now() - t0))))]);
   S.ready = true; S.anim = 'fade'; if (!S.chat.length) S.chat = [{ role: 'assistant', text: GREET, t: Date.now(), local: true }];
