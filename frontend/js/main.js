@@ -253,6 +253,7 @@ const A = {
    as the water parts, the halves swing back and collide, the mark flashes silver, and water sprinkles up and out.
    Lightweight: 4 Web Animations + ONE temporary canvas (removed afterwards), ignored while already playing. */
 const signInLogoBusy = new WeakSet();
+const HAS_IND_XFORM = !!(window.CSS && CSS.supports && CSS.supports('translate', '1px') && CSS.supports('rotate', '1deg') && CSS.supports('scale', '1'));
 function logoSplitCollide(logo, svg, upper, lower, done) {
   const DUR = 1000, HIT = 640, END = HIT + 1250;
   let over = false;
@@ -260,31 +261,37 @@ function logoSplitCollide(logo, svg, upper, lower, done) {
   upper.style.transformBox = 'fill-box'; upper.style.transformOrigin = '50% 100%';
   lower.style.transformBox = 'fill-box'; lower.style.transformOrigin = '50% 0%';
   const o = { duration: DUR, fill: 'none' };
+  // Older browsers (before ~2022) ignore the individual translate/rotate/scale properties, which would make the whole
+  // animation silently do nothing. There we fall back to `transform` (same motion, it just pauses the idle wobble meanwhile).
+  const kf = (x, y, r, offset, easing) => Object.assign(
+    HAS_IND_XFORM ? { translate: x + 'px ' + y + 'px', rotate: r + 'deg' } : { transform: 'translate(' + x + 'px, ' + y + 'px) rotate(' + r + 'deg)' },
+    offset == null ? {} : { offset }, easing ? { easing } : {});
   // apart (ease-out, slight tilt) -> hang -> accelerate together -> impact -> rebound -> settle
   upper.animate([
-    { translate: '0px 0px', rotate: '0deg', easing: 'cubic-bezier(.2,.8,.3,1)' },
-    { translate: '-6px -18px', rotate: '-9deg', offset: 0.36, easing: 'ease-in-out' },
-    { translate: '-6px -18px', rotate: '-9deg', offset: 0.46, easing: 'cubic-bezier(.6,0,.9,.4)' },
-    { translate: '0px 2px', rotate: '1.5deg', offset: 0.64, easing: 'ease-out' },
-    { translate: '0px -1px', rotate: '-.5deg', offset: 0.78, easing: 'ease-in-out' },
-    { translate: '0px 0px', rotate: '0deg' }
+    kf(0, 0, 0, null, 'cubic-bezier(.2,.8,.3,1)'),
+    kf(-6, -18, -9, 0.36, 'ease-in-out'),
+    kf(-6, -18, -9, 0.46, 'cubic-bezier(.6,0,.9,.4)'),
+    kf(0, 2, 1.5, 0.64, 'ease-out'),
+    kf(0, -1, -0.5, 0.78, 'ease-in-out'),
+    kf(0, 0, 0)
   ], o);
   lower.animate([
-    { translate: '0px 0px', rotate: '0deg', easing: 'cubic-bezier(.2,.8,.3,1)' },
-    { translate: '6px 18px', rotate: '7deg', offset: 0.36, easing: 'ease-in-out' },
-    { translate: '6px 18px', rotate: '7deg', offset: 0.46, easing: 'cubic-bezier(.6,0,.9,.4)' },
-    { translate: '0px -2px', rotate: '-1.2deg', offset: 0.64, easing: 'ease-out' },
-    { translate: '0px 1px', rotate: '.4deg', offset: 0.78, easing: 'ease-in-out' },
-    { translate: '0px 0px', rotate: '0deg' }
+    kf(0, 0, 0, null, 'cubic-bezier(.2,.8,.3,1)'),
+    kf(6, 18, 7, 0.36, 'ease-in-out'),
+    kf(6, 18, 7, 0.46, 'cubic-bezier(.6,0,.9,.4)'),
+    kf(0, -2, -1.2, 0.64, 'ease-out'),
+    kf(0, 1, 0.4, 0.78, 'ease-in-out'),
+    kf(0, 0, 0)
   ], o);
   // impact: pop + silver glow (the whole mark turns brushed silver, then the colour flows back)
   const S0 = 'drop-shadow(0 0 0 rgba(226,232,240,0)) drop-shadow(0 0 0 rgba(203,213,225,0)) grayscale(0) brightness(1)';
   const S1 = 'drop-shadow(0 0 6px rgba(240,245,252,.95)) drop-shadow(0 0 16px rgba(203,213,225,.75)) grayscale(.9) brightness(1.75)';
   const S2 = 'drop-shadow(0 0 5px rgba(226,232,240,.5)) drop-shadow(0 0 10px rgba(203,213,225,.35)) grayscale(.45) brightness(1.3)';
+  const sc = (v) => HAS_IND_XFORM ? { scale: String(v) } : { transform: 'scale(' + v + ')' };
   svg.animate([
-    { scale: '1', filter: S0 }, { scale: '1', filter: S0, offset: 0.62 },
-    { scale: '1.14', filter: S1, offset: 0.68, easing: 'ease-out' },
-    { scale: '1', filter: S2, offset: 0.8 }, { scale: '1', filter: S0 }
+    Object.assign(sc(1), { filter: S0 }), Object.assign(sc(1), { filter: S0, offset: 0.62 }),
+    Object.assign(sc(1.14), { filter: S1, offset: 0.68, easing: 'ease-out' }),
+    Object.assign(sc(1), { filter: S2, offset: 0.8 }), Object.assign(sc(1), { filter: S0 })
   ], { duration: 1500, fill: 'none' });
 
   // water: one canvas, drops under gravity, impact flash, shock ring, silver sparkles
@@ -335,7 +342,7 @@ function logoSplitCollide(logo, svg, upper, lower, done) {
 }
 /* Wordmark under the sign-in logo: when the two halves collide (HIT = 640ms) the name gives a small shake. */
 function wordmarkSplash(hero) {
-  const letters = hero && hero.querySelectorAll('.wm i');
+  const letters = hero && hero.querySelectorAll('b .w1, b .w2');
   if (!letters || !letters.length || typeof letters[0].animate !== 'function') return;
   letters.forEach((el, n) => el.animate([
     { transform: 'translate(0,0) rotate(0deg)' },
@@ -352,11 +359,17 @@ document.addEventListener('click', e => {
     const svg = logo.querySelector('.logo-live');
     const upper = svg && svg.querySelector('.hl-full path:first-child');
     const lower = svg && svg.querySelector('.hl-full path:last-child');
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!calm && upper && lower && !signInLogoBusy.has(svg) && typeof upper.animate === 'function') {
+    // Plays for everyone: a short, one-shot animation the visitor starts by clicking. (It used to be skipped when the OS
+    // "reduce motion" setting was on, which silently disabled it on many PCs while the CSS animations kept running.)
+    if (upper && lower && !signInLogoBusy.has(svg) && typeof upper.animate === 'function') {
       signInLogoBusy.add(svg);
-      logoSplitCollide(logo, svg, upper, lower, () => signInLogoBusy.delete(svg));
-      wordmarkSplash(logo.parentElement);
+      try {
+        logoSplitCollide(logo, svg, upper, lower, () => signInLogoBusy.delete(svg));
+        wordmarkSplash(logo.parentElement);
+      } catch (err) {   // never leave the logo locked (or a canvas behind) if a browser rejects part of the animation
+        signInLogoBusy.delete(svg);
+        const stray = logo.querySelector('canvas'); if (stray) stray.remove();
+      }
     }
   }
   const el = e.target.closest('[data-act]');
