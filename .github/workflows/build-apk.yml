@@ -56,6 +56,10 @@ jobs:
         run: |
           # The real AquaFind logo layers are committed in mobile/assets (icon-only, icon-foreground, icon-background)
           # so the Android launcher icon (round, square and adaptive) shows the logo, not the Capacitor placeholder.
+          mkdir -p assets
+          for f in icon-only icon-foreground icon-background; do
+            test -f "assets/$f.png" || { echo "Missing mobile/assets/$f.png - upload the three logo PNGs into the mobile/assets folder of your repo"; exit 1; }
+          done
           sudo apt-get update && sudo apt-get install -y imagemagick
           npm install --no-save @capacitor/assets
           # Splash screen: the logo centered on the same deep blue as the startup animation
