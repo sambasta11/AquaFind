@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 22
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -53,10 +53,10 @@ jobs:
 
       - name: App icon
         working-directory: mobile
-        continue-on-error: true
         run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
           mkdir -p assets
-          convert assets/icon-512-source.png -resize 1024x1024 assets/icon-only.png
+          convert ../frontend/icons/icon-512.png -resize 1024x1024 assets/icon-only.png
           npm install --no-save @capacitor/assets
           npx capacitor-assets generate --android --iconBackgroundColor '#EEF6FC' --iconBackgroundColorDark '#EEF6FC'
 
