@@ -1812,3 +1812,7 @@ button.kpi{cursor:pointer}button.kpi:hover{transform:translateY(-2px);box-shadow
   .is-auth .auth-hero b .w1,.is-auth .auth-hero b .w2,.is-auth .auth-hero>span:last-of-type{animation:none!important;opacity:1;transform:none}
   .is-auth .auth-hero b::after{animation:none!important;width:80px}
 }
+
+
+/* ---------- Sign-in: Google is the only social button, so it gets the full width ---------- */
+.soc{grid-template-columns:1fr}
