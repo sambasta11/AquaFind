@@ -71,7 +71,7 @@ function viewAnim(r) {
 function render() {
   const r = currentRoute(), app = $('#app');
   document.title = (TITLES[r.name] || 'AquaFind') + ' · AquaFind';
-  if (!S.ready) { app.className = ''; app.innerHTML = loader(); setTabs(r, false); return; }
+  if (!S.ready) { app.className = ''; setTabs(r, false); return; }   // the static #splash in index.html covers startup; never re-draw it (that restarted its animation = flicker)
   if (S.offlineBoot && !S.user) { app.className = 'is-auth'; app.innerHTML = offlineScreen(); setTabs(r, false); return; }
   if (!S.user && !AUTH.includes(r.name)) return location.replace('#/signin');
   if (S.user && AUTH.includes(r.name)) return location.replace(isStaff(S.user) ? '#/admin' : '#/');
@@ -578,13 +578,35 @@ window.addEventListener('aqf-online', async () => {
   if (S.offlineBoot) { await bootSession(); render(); return; }
   if (S.user) { try { await loadAll(); renderKeep(); toast('Back online. Availability refreshed.', 'ok'); } catch { } }
 });
+/* Startup splash: shown by index.html before any script runs. We keep it up for a short minimum so the water-fill can play
+   smoothly, render the real app underneath, then let the water complete and crossfade the splash away (no cut, no flash). */
+function hideSplash() {
+  const sp = document.getElementById('splash');
+  if (!sp) return Promise.resolve();
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return (async () => {
+    await frame();
+    sp.classList.add('full');                 // water fills the mark, progress bar completes
+    await wait(calm ? 50 : 750);
+    sp.classList.add('out');                  // crossfade into the already-rendered app
+    await wait(calm ? 50 : 720);
+    sp.remove(); document.getElementById('splash-css')?.remove();
+    const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = '#EEF6FC';
+  })();
+}
 (async function boot() {
   render();
-  // In the installed Android app, keep the animated startup loader on screen for at least 2.5 s (the website is unchanged).
-  const hold = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ? 2500 : 0;
-  await Promise.all([bootSession(), new Promise(r => setTimeout(r, hold))]);
+  // Minimum on-screen time so the animation never flashes by (longer in the installed app); a repeat visit in the same session is quicker.
+  let seen = false; try { seen = sessionStorage.getItem('aqf-splash') === '1'; sessionStorage.setItem('aqf-splash', '1'); } catch { }
+  const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const hold = native ? 2500 : seen ? 900 : 1800;
+  const t0 = window.__splashT || Date.now();
+  await Promise.all([bootSession(), new Promise(r => setTimeout(r, Math.max(0, hold - (Date.now() - t0))))]);
   S.ready = true; S.anim = 'fade'; if (!S.chat.length) S.chat = [{ role: 'assistant', text: GREET, t: Date.now(), local: true }];
   if (isStaff(S.user) && !location.hash) location.hash = '#/admin'; else render();
+  await hideSplash();
   OAUTH.callback();   // returning from Google: finish the sign-in (or show why it did not finish)
 })();
 
