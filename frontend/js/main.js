@@ -583,7 +583,7 @@ window.addEventListener('aqf-online', async () => {
   await bootSession();
   S.ready = true; S.anim = 'fade'; if (!S.chat.length) S.chat = [{ role: 'assistant', text: GREET, t: Date.now(), local: true }];
   if (isStaff(S.user) && !location.hash) location.hash = '#/admin'; else render();
-  OAUTH.callback();   // returning from Google / Facebook: finish the sign-in (or show why it did not finish)
+  OAUTH.callback();   // returning from Google: finish the sign-in (or show why it did not finish)
 })();
 
 // Sign-in panel: cursor-reactive spotlight, ring and logo parallax (desktop pointers only; purely decorative)
