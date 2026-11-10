@@ -54,13 +54,94 @@ jobs:
       - name: App icon
         working-directory: mobile
         run: |
-          # The real AquaFind logo layers are committed in mobile/assets (icon-only, icon-foreground, icon-background)
-          # so the Android launcher icon (round, square and adaptive) shows the logo, not the Capacitor placeholder.
+          # Build the Android launcher icon (round, square and adaptive) from the real AquaFind logo
+          # (frontend/icons/logo.svg). If you commit your own PNGs in mobile/assets they are used instead.
           mkdir -p assets
-          for f in icon-only icon-foreground icon-background; do
-            test -f "assets/$f.png" || { echo "Missing mobile/assets/$f.png - upload the three logo PNGs into the mobile/assets folder of your repo"; exit 1; }
-          done
-          sudo apt-get update && sudo apt-get install -y imagemagick
+          sudo apt-get update && sudo apt-get install -y imagemagick python3-pil
+          if [ ! -f assets/icon-only.png ] || [ ! -f assets/icon-foreground.png ] || [ ! -f assets/icon-background.png ]; then
+            echo "Generating icon layers from frontend/icons/logo.svg"
+            python3 - <<'EOF'
+          import re
+          from PIL import Image, ImageDraw, ImageChops
+
+          SVG = open('../frontend/icons/logo.svg').read()
+          paths = re.findall(r'<path d="([^"]+)"', SVG)
+          SS = 4            # supersampling
+          SIZE = 1024
+          GLYPH_W = 600     # glyph width in px on the 1024 canvas (inside the 66% adaptive safe zone = 676px)
+
+          def subpaths(d):
+              toks = re.findall(r'[MCLz]|-?\d*\.?\d+', d)
+              i, cur, subs, pts = 0, None, [], []
+              def bez(p0, p1, p2, p3, n=24):
+                  out = []
+                  for k in range(1, n + 1):
+                      t = k / n; u = 1 - t
+                      out.append((u**3*p0[0] + 3*u*u*t*p1[0] + 3*u*t*t*p2[0] + t**3*p3[0],
+                                  u**3*p0[1] + 3*u*u*t*p1[1] + 3*u*t*t*p2[1] + t**3*p3[1]))
+                  return out
+              while i < len(toks):
+                  t = toks[i]
+                  if t == 'M':
+                      if pts: subs.append(pts)
+                      cur = (float(toks[i+1]), float(toks[i+2])); pts = [cur]; i += 3
+                  elif t == 'C':
+                      i += 1
+                      while i < len(toks) and toks[i] not in 'MCLz':
+                          c = [float(x) for x in toks[i:i+6]]
+                          pts += bez(cur, (c[0], c[1]), (c[2], c[3]), (c[4], c[5])); cur = (c[4], c[5]); i += 6
+                  elif t == 'L':
+                      i += 1
+                      while i < len(toks) and toks[i] not in 'MCLz':
+                          cur = (float(toks[i]), float(toks[i+1])); pts.append(cur); i += 2
+                  elif t == 'z':
+                      i += 1
+                  else:
+                      i += 1
+              if pts: subs.append(pts)
+              return subs
+
+          allsubs = [s for d in paths for s in subpaths(d)]
+          xs = [x for s in allsubs for x, _ in s]; ys = [y for s in allsubs for _, y in s]
+          minx, maxx, miny, maxy = min(xs), max(xs), min(ys), max(ys)
+          scale = GLYPH_W / (maxx - minx)
+          cx, cy = (minx + maxx) / 2, (miny + maxy) / 2
+
+          big = SIZE * SS
+          mask = Image.new('L', (big, big), 0)
+          for d in paths:                      # each <path> is filled separately (even-odd inside a path)
+              pm = Image.new('L', (big, big), 0)
+              for s in subpaths(d):
+                  sm = Image.new('L', (big, big), 0)
+                  poly = [((x - cx) * scale * SS + big / 2, (y - cy) * scale * SS + big / 2) for x, y in s]
+                  ImageDraw.Draw(sm).polygon(poly, fill=255)
+                  pm = ImageChops.logical_xor(pm.convert('1'), sm.convert('1')).convert('L')
+              mask = ImageChops.lighter(mask, pm)
+          mask = mask.resize((SIZE, SIZE), Image.LANCZOS)
+
+          def vgrad(top, bot, size=SIZE):
+              g = Image.new('RGB', (1, size))
+              for y in range(size):
+                  t = y / (size - 1)
+                  g.putpixel((0, y), tuple(round(top[i] + (bot[i] - top[i]) * t) for i in range(3)))
+              return g.resize((size, size))
+
+          # colours sampled from the existing app icon
+          bg = vgrad((18, 68, 122), (24, 115, 206))
+          glyph_colour = vgrad((255, 255, 255), (200, 240, 252))
+
+          fg = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+          fg.paste(glyph_colour, (0, 0), mask)
+
+          only = bg.convert('RGBA')
+          only.alpha_composite(fg)
+
+          fg.save('assets/icon-foreground.png')
+          bg.convert('RGB').save('assets/icon-background.png')
+          only.convert('RGB').save('assets/icon-only.png')
+          EOF
+          fi
+          ls -la assets
           npm install --no-save @capacitor/assets
           # Splash screen: the logo centered on the same deep blue as the startup animation
           convert -size 2732x2732 xc:'#12427A' \( ../frontend/icons/icon-512.png -resize 700x700 \) -gravity center -composite assets/splash.png
