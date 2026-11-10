@@ -1,78 +1,102 @@
-// Google/Facebook sign-in backend test: DATABASE_URL=... node test/oauth.js
-// Runs the real server against a MOCK Supabase Auth (it plays Supabase's /auth/v1/user and /auth/v1/settings),
-// so it proves AquaFind's side (token verification, account create/return, no e-mail merging, photo import, guards).
-// It does NOT prove Google/Facebook/Supabase dashboard configuration: that needs a real browser sign-in (see DEPLOY.md).
-const http = require('http'); const { spawn } = require('child_process'); const path = require('path');
-const PORT = 3700 + Math.floor(Math.random() * 200), MOCK = PORT + 300, BASE = `http://localhost:${PORT}`;
-const SCHEMA = 'oauth_' + Math.random().toString(36).slice(2, 10);
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
-const now = new Date().toISOString();
-const USERS = {   // access token -> what Supabase would answer for it
-  'g-new-token-aaaaaaaaaaaaaaaa': { id: 'sb-g-1', email: 'Gina.G@Gmail.com', user_metadata: { full_name: 'Gina Google' }, identities: [{ provider: 'google', last_sign_in_at: now, identity_data: { email_verified: true, name: 'Gina Google' } }] },
-  'f-new-token-aaaaaaaaaaaaaaaa': { id: 'sb-f-1', email: 'fred@fb.com', user_metadata: { name: 'Fred Facebook' }, identities: [{ provider: 'facebook', last_sign_in_at: now, identity_data: { email_verified: true } }] },
-  'clash-token-aaaaaaaaaaaaaaaaa': { id: 'sb-g-2', email: 'user@aquafind.com', user_metadata: { full_name: 'Not Maria' }, identities: [{ provider: 'google', last_sign_in_at: now, identity_data: { email_verified: true } }] },
-  'noemail-token-aaaaaaaaaaaaaaa': { id: 'sb-f-2', email: '', user_metadata: { name: 'Phone Only' }, identities: [{ provider: 'facebook', last_sign_in_at: now, identity_data: {} }] },
-  'unverified-token-aaaaaaaaaaaa': { id: 'sb-f-3', email: 'unv@fb.com', user_metadata: { name: 'Unverified' }, identities: [{ provider: 'facebook', last_sign_in_at: now, identity_data: { email_verified: false } }] },
-  'emailonly-token-aaaaaaaaaaaaa': { id: 'sb-e-1', email: 'pw@x.com', user_metadata: {}, identities: [{ provider: 'email', last_sign_in_at: now, identity_data: {} }] },
-  'pic-token-aaaaaaaaaaaaaaaaaaa': { id: 'sb-g-3', email: 'pic@gmail.com', user_metadata: { full_name: 'Pic Person', avatar_url: `http://127.0.0.1:${MOCK}/photo.png` }, identities: [{ provider: 'google', last_sign_in_at: now, identity_data: { email_verified: true } }] }
-};
-const mock = http.createServer((req, res) => {
-  const j = (s, o) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
-  if (req.url === '/auth/v1/settings') return j(200, { external: { google: true, facebook: false } });
-  if (req.url === '/auth/v1/user') {
-    if (req.headers.apikey !== 'anon-test-key') return j(401, { msg: 'bad key' });
-    const u = USERS[(req.headers.authorization || '').replace('Bearer ', '')]; return u ? j(200, u) : j(401, { msg: 'invalid JWT' });
+/* AquaFind Google / Facebook sign-in: real OAuth through Supabase Auth (PKCE).
+   1. Button click -> supabase.auth.signInWithOAuth() sends the browser to Google's / Facebook's own login page.
+   2. The provider sends the browser back here with ?code=... (or ?error=... if the person cancelled or refused).
+   3. supabase-js swaps the code for a Supabase session; onAuthStateChange reports it.
+   4. The Supabase access token goes to POST /api/auth/oauth. The server asks Supabase to verify it (the same check as
+      supabase.auth.getUser), finds or creates the AquaFind account and returns AquaFind's normal session token.
+   5. The temporary Supabase session is dropped from this browser; the AquaFind session is the one that persists.
+   The anon key comes from the server (GET /api/auth/config), so nothing is hard-coded here and no secret ever reaches the browser. */
+const OAUTH = (() => {
+  const NAME = { google: 'Google', facebook: 'Facebook' };
+  const ICON = {
+    google: '<svg class="soc-i" viewBox="0 0 48 48" width="18" height="18" aria-hidden="true" focusable="false"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+    facebook: '<svg class="soc-i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="#1877F2" d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874V12h3.328l-.532 3.47h-2.796v8.385C19.612 22.954 24 17.99 24 12z"/></svg>'
+  };
+  const o = { busy: false, provider: '', err: '', pending: false };
+  let cfg = null, sb = null, libP = null, handled = false;
+
+  const loadLib = () => window.supabase?.createClient ? Promise.resolve() : (libP ||= new Promise((ok, no) => {
+    const s = document.createElement('script'); s.src = 'vendor/supabase/supabase.js'; s.onload = ok;
+    s.onerror = () => { libP = null; no(new Error('Could not load the sign-in library. Check your connection and try again.')); };
+    document.head.appendChild(s);
+  }));
+  async function client() {
+    if (!cfg) cfg = await api('GET', '/auth/config');
+    if (!cfg.enabled) throw new Error('Google sign-in is not set up yet. Use your email and password.');
+    await loadLib();
+    // PKCE needs storage to survive the trip to the provider, so persistSession stays on; it is cleared again right after sign-in.
+    return sb ||= window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: false, detectSessionInUrl: false } });
   }
-  res.writeHead(404); res.end();
-}).listen(MOCK);
-const env = { ...process.env, PORT, DB_SCHEMA: SCHEMA, DB_SCHEMA_RESET: '1', NODE_ENV: '', SUPABASE_URL: `http://127.0.0.1:${MOCK}`, SUPABASE_ANON_KEY: 'anon-test-key' };
-const srv = spawn('node', ['--no-warnings', path.join(__dirname, '..', 'server.js')], { env, stdio: 'ignore' });
-const dropSchema = async () => { const { Client } = require('pg'); const c = new Client({ connectionString: process.env.DATABASE_URL, ssl: /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL) ? false : { rejectUnauthorized: false } }); await c.connect(); await c.query(`DROP SCHEMA IF EXISTS ${SCHEMA} CASCADE`); await c.end(); };
-let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  FAIL:', m)); if (c) console.log('  ok  ', m); };
-const call = async (m, u, b, t) => { const r = await fetch(BASE + u, { method: m, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) }, body: b ? JSON.stringify(b) : undefined }); let d = {}; try { d = await r.json(); } catch { } return { s: r.status, d, h: r.headers }; };
-const oauth = t => call('POST', '/api/auth/oauth', { access_token: t });
-(async () => {
-  for (let i = 0; i < 40; i++) { try { await fetch(BASE + '/healthz'); break; } catch { await new Promise(r => setTimeout(r, 150)); } }
-  const cfg = await call('GET', '/api/auth/config'); ok(cfg.s === 200 && cfg.d.enabled && cfg.d.anonKey === 'anon-test-key' && cfg.d.providers.google === true && cfg.d.providers.facebook === false, 'config endpoint reports Supabase + which providers are switched on');
-  ok(!JSON.stringify(cfg.d).includes('service'), 'config exposes only the public anon key');
-  ok((await call('GET', '/api/auth/social')).s === 404 && (await call('POST', '/api/auth/social', { provider: 'Google' })).s === 404, 'the old simulated /api/auth/social route is gone');
-  ok((await fetch(BASE + '/')).headers.get('content-security-policy').includes(`connect-src 'self' https://routing.openstreetmap.de http://127.0.0.1:${MOCK}`), 'CSP allows the browser to reach Supabase');
-  // first-time Google login
-  const g1 = await oauth('g-new-token-aaaaaaaaaaaaaaaa'); ok(g1.s === 200 && g1.d.token && g1.d.user.email === 'gina.g@gmail.com' && g1.d.user.name === 'Gina Google' && g1.d.user.role === 'user' && g1.d.user.pw === false, 'first Google login creates the account (name + lower-cased email, no password)');
-  ok((await call('GET', '/api/stations', null, g1.d.token)).d.length === 8 && (await call('GET', '/api/me', null, g1.d.token)).d.email === 'gina.g@gmail.com', 'Google user has a working session with the same features as e-mail users');
-  const g2 = await oauth('g-new-token-aaaaaaaaaaaaaaaa'); ok(g2.s === 200 && g2.d.user.id === g1.d.user.id, 'returning Google login signs in to the SAME account (no duplicate)');
-  const users = (await call('POST', '/api/auth/login', { email: 'super@aquafind.com', password: 'super123' })); const SA = users.d.token;
-  const list = (await call('GET', '/api/superadmin/users', null, SA)).d; ok(list.filter(u => u.email === 'gina.g@gmail.com').length === 1, 'exactly one user row after two Google logins');
-  const par = await Promise.all([oauth('f-new-token-aaaaaaaaaaaaaaaa'), oauth('f-new-token-aaaaaaaaaaaaaaaa'), oauth('f-new-token-aaaaaaaaaaaaaaaa')]);
-  ok(par.every(r => r.s === 200) && new Set(par.map(r => r.d.user.id)).size === 1, 'first-time Facebook login, fired 3x at once, still makes ONE account');
-  ok((await call('GET', '/api/superadmin/users', null, SA)).d.filter(u => u.email === 'fred@fb.com').length === 1, 'no duplicate rows after the race');
-  const f2 = await oauth('f-new-token-aaaaaaaaaaaaaaaa'); ok(f2.s === 200 && f2.d.user.id === par[0].d.user.id && f2.d.user.name === 'Fred Facebook', 'returning Facebook login');
-  // account linking / safety
-  const clash = await oauth('clash-token-aaaaaaaaaaaaaaaaa'); ok(clash.s === 409 && /already exists/.test(clash.d.error) && !clash.d.token, 'Google e-mail that matches a password account is NOT merged');
-  ok((await call('POST', '/api/auth/login', { email: 'user@aquafind.com', password: 'user123' })).d.user.name === 'Maria Santos', 'the existing password account is untouched');
-  const ne = await oauth('noemail-token-aaaaaaaaaaaaaaa'); ok(ne.s === 400 && /email/i.test(ne.d.error), 'provider that shares no e-mail gives a clear message');
-  ok((await oauth('unverified-token-aaaaaaaaaaaa')).s === 403, 'unverified provider e-mail is refused');
-  ok((await oauth('emailonly-token-aaaaaaaaaaaaa')).s === 403, 'a Supabase e-mail/password identity cannot use the social endpoint');
-  ok((await oauth('forged-token-aaaaaaaaaaaaaaaaaa')).s === 401, 'invalid / forged Supabase token rejected');
-  ok((await call('POST', '/api/auth/oauth', {})).s === 400 && (await call('POST', '/api/auth/oauth', { access_token: 123 })).s === 400, 'missing or non-string token rejected');
-  // passwordless accounts
-  ok((await call('POST', '/api/auth/login', { email: 'gina.g@gmail.com', password: 'anything1' })).s === 401, 'password login for a Google-only account is refused (and does not crash)');
-  ok((await call('PUT', '/api/me/password', { current: 'x', next: 'newpass1' }, g1.d.token)).s === 400, 'password change is refused for a Google-only account');
-  ok((await call('PUT', '/api/me', { name: 'Gina G.', phone: '0917' }, g1.d.token)).d.name === 'Gina G.' && (await oauth('g-new-token-aaaaaaaaaaaaaaaa')).d.user.name === 'Gina G.', 'profile edits survive the next Google login');
-  // deactivated
-  const gid = g1.d.user.id; await call('PUT', '/api/superadmin/users/' + gid, { active: false }, SA);
-  ok((await oauth('g-new-token-aaaaaaaaaaaaaaaa')).s === 403 && (await call('GET', '/api/me', null, g1.d.token)).s === 401, 'deactivated Google account cannot sign in');
-  // profile photo import
-  const photo = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'image/png' }); r.end(PNG); }).listen(0);   // 127.0.0.1 is not an allowed photo host: must be ignored
-  const pic = await oauth('pic-token-aaaaaaaaaaaaaaaaaaa'); ok(pic.s === 200 && pic.d.user.avatar === null, 'photo from a non-Google/Facebook host is not imported (SSRF guard), sign-in still works');
-  photo.close();
-  // server without Supabase config
-  const srv2 = spawn('node', ['--no-warnings', path.join(__dirname, '..', 'server.js')], { env: { ...env, PORT: PORT + 600, SUPABASE_URL: '', SUPABASE_ANON_KEY: '' }, stdio: 'ignore' });
-  for (let i = 0; i < 40; i++) { try { await fetch(`http://localhost:${PORT + 600}/healthz`); break; } catch { await new Promise(r => setTimeout(r, 150)); } }
-  const c2 = await (await fetch(`http://localhost:${PORT + 600}/api/auth/config`)).json(); const o2 = await fetch(`http://localhost:${PORT + 600}/api/auth/oauth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ access_token: 'g-new-token-aaaaaaaaaaaaaaaa' }) });
-  ok(c2.enabled === false && o2.status === 503, 'missing OAuth configuration: config says disabled, endpoint answers 503 with a clear message'); srv2.kill();
-  const srv3 = spawn('node', ['--no-warnings', path.join(__dirname, '..', 'server.js')], { env: { ...env, PORT: PORT + 601, SUPABASE_ANON_KEY: 'sb_secret_abcdef' }, stdio: 'ignore' });
-  for (let i = 0; i < 40; i++) { try { await fetch(`http://localhost:${PORT + 601}/healthz`); break; } catch { await new Promise(r => setTimeout(r, 150)); } }
-  ok((await (await fetch(`http://localhost:${PORT + 601}/api/auth/config`)).json()).enabled === false, 'a secret / service-role key in SUPABASE_ANON_KEY is refused, never sent to the browser'); srv3.kill();
-  console.log(`\n${pass} passed, ${fail} failed`); srv.kill(); mock.close(); await dropSchema(); process.exit(fail ? 1 : 0);
-})().catch(async e => { console.error(e); srv.kill(); mock.close(); await dropSchema(); process.exit(1); });
+  const label = p => o.busy && o.provider === p
+    ? `<span class="spinner sm"></span> ${o.pending ? 'Signing you in…' : 'Opening ' + NAME[p] + '…'}`
+    : `${ICON[p]} ${NAME[p]}`;
+  const btn = p => `<button type="button" class="btn outline soc-btn" data-act="soc" data-p="${p}"${o.busy ? ' disabled' : ''} aria-busy="${o.busy && o.provider === p}">${label(p)}</button>`;
+  const paint = () => {
+    $$('.soc .soc-btn').forEach(b => { b.disabled = o.busy; b.setAttribute('aria-busy', o.busy && o.provider === b.dataset.p); b.innerHTML = label(b.dataset.p); });
+    const m = $('#socmsg'); if (m) m.textContent = o.err;
+  };
+  const fail = msg => { o.busy = false; o.pending = false; o.err = msg; paint(); };
+
+  async function start(p) {
+    if (o.busy || !NAME[p]) return;                         // repeated clicks do nothing
+    Object.assign(o, { busy: true, provider: p, err: '', pending: false }); paint();
+    try {
+      const c = cfg || (cfg = await api('GET', '/auth/config'));
+      if (c.enabled && c.providers && !c.providers[p]) throw new Error(NAME[p] + ' sign-in is not switched on for this app yet.');
+      const s = await client();
+      try { sessionStorage.setItem('aqf_oauth_p', p); } catch { }
+      const { error } = await s.auth.signInWithOAuth({ provider: p, options: { redirectTo: location.origin + location.pathname, ...(p === 'google' ? { queryParams: { prompt: 'select_account' } } : {}) } });
+      if (error) throw error;                               // on success the browser is already leaving for the provider
+    } catch (e) { fail(e.message || 'Sign-in could not start. Please try again.'); }
+  }
+
+  // Read what the provider sent back. Supabase uses the query string (PKCE) and, for errors, sometimes the hash.
+  function readReturn() {
+    const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#\/?\??/, ''));
+    const pick = k => q.get(k) || (h.has('error') ? h.get(k) : null);
+    const code = q.get('code'), error = pick('error'), desc = pick('error_description');
+    const had = !!(code || error);
+    if (had) { try { history.replaceState(null, '', location.pathname + (h.has('error') ? '#/signin' : location.hash)); } catch { } }
+    return { code, error, desc };
+  }
+  const RETURN = readReturn();   // read once, right away: the router rewrites the hash during start-up
+  const lastProvider = () => { try { return sessionStorage.getItem('aqf_oauth_p') || ''; } catch { return ''; } };
+  function clear() {
+    try { sessionStorage.removeItem('aqf_oauth_p'); Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k)); } catch { }
+  }
+  async function finish(session) {
+    try {
+      const d = await api('POST', '/auth/oauth', { access_token: session.access_token });
+      Object.assign(o, { busy: false, pending: false, err: '' });
+      await enter(d, true);
+    } catch (e) { fail(e.message || 'Sign-in could not be completed.'); if (e.status === 401) { /* token expired: they can simply try again */ } }
+    finally { try { await sb?.auth.signOut({ scope: 'local' }); } catch { } clear(); }
+  }
+  // Called once at start-up: completes a sign-in the provider just redirected back from (or reports why it did not finish).
+  async function callback() {
+    const { code, error, desc } = RETURN;
+    if (!code && !error) return;
+    const p = lastProvider() || 'google'; Object.assign(o, { provider: p, busy: !!code && !error, pending: true, err: '' });
+    if (S.user) { clear(); return; }                        // already signed in to AquaFind: ignore a stale return
+    if (location.hash !== '#/signin' && location.hash !== '#/signup') { location.replace('#/signin'); }
+    if (error) {
+      clear();
+      return fail(error === 'access_denied' ? `${NAME[p]} sign-in was cancelled or permission was not granted. You can try again or use your email and password.`
+        : (desc ? desc.replace(/\+/g, ' ') : 'Sign-in with ' + NAME[p] + ' failed. Please try again.'));
+    }
+    paint();
+    try {
+      const s = await client();
+      s.auth.onAuthStateChange((ev, session) => {            // supabase-js says when the code exchange produced a session
+        if (ev === 'SIGNED_IN' && session && !handled) { handled = true; setTimeout(() => finish(session), 0); }   // not awaited here: supabase calls must not run inside this callback
+      });
+      const { error: ex } = await s.auth.exchangeCodeForSession(code);
+      if (ex) { clear(); fail(`${NAME[p]} sign-in could not be completed (${ex.message}). Please try again.`); }
+    } catch (e) { clear(); fail(e.message || 'Sign-in could not be completed.'); }
+  }
+  // Back button from the provider's page restores this page frozen in its "busy" state: unfreeze it.
+  window.addEventListener('pageshow', e => { if (e.persisted && o.busy && !o.pending) { o.busy = false; o.err = ''; paint(); } });
+
+  const html = () => `<div class="or"><span>or continue with</span></div><div class="soc">${btn('google')}</div><p class="ferr form soc-msg" id="socmsg" role="alert" aria-live="polite">${esc(o.err)}</p>`;
+  return { html, start, callback, clear, state: o };
+})();
