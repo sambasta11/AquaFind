@@ -41,6 +41,15 @@ jobs:
           case "$API_BASE" in https://*) ;; *) echo "Server address must start with https://"; exit 1;; esac
           printf "window.AQF_API_BASE = '%s';\n" "$API_BASE" > frontend/config.js
           cat frontend/config.js
+          # Do not pack the previous APK into the new one (it made every build bigger than the last).
+          rm -rf frontend/downloads
+
+      - name: Use the same signing key every build
+        run: |
+          # A new runner creates a brand-new random debug key each time, so every APK had a different
+          # signature and a phone that already had an older AquaFind refused the new one ("App not installed").
+          mkdir -p ~/.android
+          cp mobile/debug.keystore ~/.android/debug.keystore
 
       - name: Create the Android project
         working-directory: mobile
@@ -156,6 +165,10 @@ jobs:
           npx cap sync android
           cd android && ./gradlew assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/AquaFind.apk"
+          # Fail the build (instead of shipping a broken file) if the APK is bad or not signed with our key.
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$GITHUB_WORKSPACE/AquaFind.apk" | tee /tmp/verify.txt
+          grep -q "Verifies" /tmp/verify.txt
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$GITHUB_WORKSPACE/AquaFind.apk" | grep "certificate DN"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -165,6 +178,7 @@ jobs:
       - name: Put the APK on your site's download button
         continue-on-error: true
         run: |
+          mkdir -p frontend/downloads
           cp AquaFind.apk frontend/downloads/AquaFind.apk
           git config user.name "github-actions"
           git config user.email "actions@users.noreply.github.com"
